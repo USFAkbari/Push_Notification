@@ -1,0 +1,54 @@
+---
+alwaysApply: true
+description: Prevent Persian/Farsi comments in code
+---
+
+# No Persian Comments Rule
+
+## Rule
+**NEVER write comments in Persian/Farsi language in code files.**
+
+## Guidelines
+- All code comments must be written in English only
+- Variable names, function names, and identifiers should be in English
+- Error messages and console logs should be in English
+- Documentation strings should be in English
+- Only user-facing text (UI labels, messages) can be in Persian
+
+## Examples
+
+### ❌ Wrong (Persian comments)
+```javascript
+// تعیین وضعیت پرداخت بر اساس URL parameters
+const paymentStatus = getUrlParam("ps");
+
+// اگر پارامترهای سپ موجود باشد، منتظر پاسخ سپ می‌مانیم
+if (sepToken || sepRefNum) {
+  // ...
+}
+```
+
+### ✅ Correct (English comments)
+```javascript
+// Determine payment status based on URL parameters
+const paymentStatus = getUrlParam("ps");
+
+// If SEP parameters exist, wait for SEP response
+if (sepToken || sepRefNum) {
+  // ...
+}
+```
+
+## Exceptions
+- User-facing text in UI components (labels, messages, placeholders)
+- Configuration files that specifically require Persian text
+- Documentation files (README.md, etc.) can contain Persian if needed for user understanding
+
+## Enforcement
+This rule applies to all code files including:
+- JavaScript/TypeScript files (.js, .ts, .jsx, .tsx)
+- CSS/SCSS files
+- Configuration files
+- Any other code-related files
+
+Always use English for technical documentation and code comments to maintain consistency and readability for international developers.

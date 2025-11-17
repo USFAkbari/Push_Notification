@@ -1,0 +1,136 @@
+---
+alwaysApply: true
+description: Beanie ODM Count Methods Usage Rules
+---
+
+# Beanie ODM Count Methods Rule
+
+## Critical Rule
+**ALWAYS use `find(dictionary_filter).count()` method with dictionary filters instead of Beanie query expressions in Beanie ODM to avoid runtime errors.**
+
+## The Problem
+Using `find(Beanie_expressions).count()` in Beanie ODM causes this error:
+```
+FindInterface.count() takes 1 positional argument but 2 were given
+```
+
+## Correct Usage
+
+### ✅ **RIGHT WAY - Use `find(dictionary_filter).count()`**
+```python
+# Count with filter dictionary
+replies_count = await Comment.find({"parent_id": str(self.id)}).count()
+
+# Count with multiple filters
+total_users = await User.find({
+    "is_active": True,
+    "created_date": {"$gte": start_date}
+}).count()
+
+# Count all documents
+total_comments = await Comment.find({}).count()
+```
+
+### ❌ **WRONG WAY - Don't use Beanie query expressions with count()**
+```python
+# This will cause runtime error
+replies_count = await Comment.find(Comment.parent_id == str(self.id)).count()
+
+# This will also fail
+total_users = await User.find(User.is_active == True).count()
+```
+
+## Real Project Examples
+
+### Success Example (from robo_id/api.py)
+```python
+# This works correctly
+user_data['invitees'] = await User.find({'referral': str(user.khademyari_code)}).count()
+overal_total_count = await Log.find(*criteria).count()
+```
+
+### Fixed Example (from comment.py)
+```python
+# Before (WRONG)
+replies_count = await Comment.find(Comment.parent_id == str(self.id)).count()
+
+# After (CORRECT)
+replies_count = await Comment.find({"parent_id": str(self.id)}).count()
+```
+
+## When to Use Each Method
+
+### Use `find(dictionary_filter).count()` for:
+- ✅ Simple counting with dictionary filters
+- ✅ Performance-critical operations
+- ✅ Most counting scenarios in this project
+
+### Use `find().to_list()` + `len()` for:
+- ✅ When you need the actual documents anyway
+- ✅ Complex queries that can't be expressed in dictionary format
+
+### Never use `find(Beanie_expressions).count()`:
+- ❌ This pattern doesn't work in Beanie ODM
+- ❌ Will cause runtime errors
+- ❌ No exceptions to this rule
+
+## Filter Syntax
+
+### Dictionary Filters (for find().count())
+```python
+# Simple equality
+await Comment.find({"event_id": event_id}).count()
+
+# Multiple conditions (AND)
+await Comment.find({
+    "event_id": event_id,
+    "parent_id": None,
+    "is_featured": True
+}).count()
+
+# MongoDB operators
+await Comment.find({
+    "parent_id": {"$ne": None},  # Not equal
+    "datetime": {"$gte": start_date},  # Greater than or equal
+    "text": {"$regex": "pattern", "$options": "i"}  # Regex match
+}).count()
+
+# Null/None values
+await Comment.find({"parent_id": None}).count()  # Count where parent_id is None
+await Comment.find({"parent_id": {"$ne": None}}).count()  # Count where parent_id is not None
+```
+
+## Performance Notes
+
+### Efficient
+- `find(dictionary_filter).count()` is optimized and uses MongoDB's native count
+- Uses indexes when available
+- Minimal memory usage
+
+### Less Efficient
+```python
+# Avoid this pattern for large collections
+items = await Comment.find(filter).to_list()
+count = len(items)  # Loads all documents into memory
+```
+
+## Error Prevention Checklist
+
+Before committing any code with count operations:
+
+1. ✅ Are you using `find(dictionary_filter).count()` instead of `find(Beanie_expressions).count()`?
+2. ✅ Is your filter a dictionary, not Beanie query expressions?
+3. ✅ Have you tested the count operation doesn't throw runtime errors?
+4. ✅ Are you handling None values correctly in filters?
+
+## Related Files to Reference
+
+- ✅ `Back/app/components/robo_id/api.py` - Good examples of find().count() usage
+- ✅ `Back/app/models/comment.py` - Recently fixed to use correct method
+- ❌ Don't follow patterns that use Beanie query expressions with count()
+
+## Summary
+
+**Always remember: In Beanie ODM, counting = `find(dictionary_filter).count()` with dictionary filters only.**
+
+This rule prevents the "FindInterface.count() takes 1 positional argument but 2 were given" error that has occurred multiple times in this project.

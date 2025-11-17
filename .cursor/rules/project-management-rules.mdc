@@ -1,0 +1,227 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Complete Documentation Review Rule
+
+**CRITICAL: Whenever reading this rule file or any cursor rules, you MUST comprehensively study ALL documentation files in the following directories:**
+
+1. **Frontend Documentation:**
+   - `Front/README.md` - Frontend setup and configuration
+   - `Front/changelogs.md` - Frontend change history
+   - `Front/src/components/` - Component documentation and structure
+   - `Front/src/pages/` - Page components and routing
+   - `Front/src/hooks/` - Custom hooks documentation
+
+2. **Backend Documentation:**
+   - `Back/README.md` - Backend setup and configuration
+   - `Back/changelog.md` - Backend change history
+   - `Back/sep_doc.md` - Payment gateway documentation (SEP)
+   - `Back/app/models/` - Database models and schemas
+   - `Back/app/api/` - API endpoints documentation
+   - `Back/app/components/` - Component modules (robo_id, robo_pay, robo_sms, robo_upkeep)
+
+**This rule ensures complete understanding of project architecture, workflows, models, and implementation details before proceeding with any development tasks.**
+
+---
+
+# Project Management and Development Rules
+
+## Communication Language Guidelines
+
+- **User Communication**: All communication with users should be in Persian (fa) unless specifically requested otherwise
+- **Code Documentation**: All code comments, documentation, and technical content must be written in English only
+- **File Content**: Project files (code, configuration, etc.) must contain English content exclusively - no Persian text in project files
+
+## Cross-Stack Integration
+
+### Backend-Frontend Coordination
+- **Authentication Flow**: Coordinate JWT token handling between FastAPI backend and React frontend
+- **Payment Integration**: Ensure payment gateway (ZarinPal, SEP) integration works seamlessly between backend and frontend
+- **Error Handling**: Consistent error response format across backend and frontend
+- **State Management**: Use Zustand for frontend state management with proper API integration
+
+### Development Workflow
+- **Documentation Priority**: Always refer to `Back/` directory for backend specifications and `Front/` directory for frontend requirements
+- **API-First Development**: Backend endpoints must be implemented and documented before frontend integration
+- **Testing Coordination**: Ensure integration tests cover both frontend and backend interactions
+- **Component Architecture**: Follow React component patterns with proper TypeScript typing
+
+### File Structure Alignment
+- **MongoDB Integration**: Frontend data operations must use backend MongoDB endpoints exclusively
+- **Static Assets**: Coordinate static file serving between React build and FastAPI static files
+- **Environment Configuration**: Align environment variables and configuration across both stacks
+- **Docker Deployment**: Ensure both frontend and backend work properly in Docker containers
+
+## Quality Assurance Standards
+
+### Code Quality
+- **TypeScript Strict Mode**: Frontend components must use strict TypeScript typing
+- **Python Type Hints**: Backend components must use proper type hints and Pydantic models
+- **Linting Standards**: Consistent code formatting and linting rules across the project
+- **Security Practices**: Implement security best practices in both frontend and backend
+- **Payment Security**: Ensure secure handling of payment data and sensitive information
+
+### Build Verification (CRITICAL)
+- **MANDATORY BUILD RULE**: After ANY changes to Frontend or Admin, ALWAYS run build commands to catch issues early
+- **Frontend Build**: `cd Front && npm run build` - Must complete without errors
+- **Admin Build**: `cd Admin && npm run build` - Must complete without errors
+- **Build Failure Response**: STOP all work, FIX build issues immediately, DO NOT proceed with new features
+- **Pre-Commit Checklist**: Every task completion must include successful build verification
+- **Integration Testing**: Test data flow between backend, admin, and frontend after changes
+
+### Testing Requirements
+- **Unit Testing**: Minimum 80% code coverage for both stacks
+- **Integration Testing**: End-to-end testing covering full user workflows
+- **Payment Testing**: Thorough testing of payment gateway integrations (ZarinPal, SEP)
+- **Performance Testing**: Both backend response times and frontend load times must meet performance criteria
+- **MongoDB Testing**: Ensure proper database operations and data integrity
+
+### Documentation Standards
+- **API Documentation**: Maintain up-to-date OpenAPI specifications for FastAPI endpoints
+- **Component Documentation**: Document all reusable React components with TypeScript interfaces
+- **Workflow Documentation**: Keep workflow documentation synchronized with actual implementation
+- **Payment Documentation**: Maintain comprehensive documentation for payment gateway integrations
+- **Database Documentation**: Document MongoDB models and relationships clearly
+
+## Project-Specific Rules
+
+### Event Management System
+- **Event Types**: Support for Day-Based Events, Count-Based Events, and Task-Based Events
+- **Participation Tracking**: Proper handling of user participation in events
+- **Statistics**: Maintain accurate event statistics and reporting
+- **Notifications**: Implement proper notification system for event updates
+
+### Payment System Integration
+- **ZarinPal Integration**: Ensure proper ZarinPal payment gateway implementation
+- **SEP Integration**: Follow SEP payment gateway documentation and security requirements
+- **Order Management**: Proper handling of payment orders and transactions
+- **Receipt Generation**: Generate proper payment receipts and certificates
+
+### User Management
+- **Authentication**: Implement secure user authentication with JWT tokens
+- **Profile Management**: Handle user profiles and personal information
+- **SMS Integration**: Integrate SMS services for user verification and notifications
+- **Role-Based Access**: Implement proper role-based access control
+
+### Data Management
+- **MongoDB Operations**: Use Beanie ODM for proper database operations
+- **Data Validation**: Implement proper data validation using Pydantic models
+- **File Storage**: Handle file uploads and storage properly
+- **Export Functionality**: Implement data export features for reports and analytics
+
+---
+
+# Mandatory Working Rules (CRITICAL)
+
+**CRITICAL: These rules MUST be followed for ALL development tasks and project changes. No exceptions allowed.**
+
+## 1. Complete File Review Requirement
+
+**BEFORE making any changes to the project, you MUST:**
+
+- **Read ALL related files line by line completely** for the topic you're about to add or fix
+- **Obtain precise information** and do not rely on previous knowledge
+- **Examine existing code thoroughly** to understand current implementation
+- **Study all dependencies and imports** in related files
+- **Understand the complete context** before making any modifications
+- **Review related models** in `Back/app/models/` directory
+- **Check API endpoints** in `Back/app/api/` directory
+- **Examine React components** in `Front/src/components/` and `Front/src/pages/`
+
+## 2. Complete Rules Review and Compliance
+
+**BEFORE starting any work, you MUST:**
+
+- **Read all existing rule files completely and line by line**
+- **Execute and follow all rules precisely** without any violations
+- **Adhere to project standards** and established patterns
+- **Review all cursor rules** in the `.cursor/rules/` directory
+- **Ensure compliance** with all documented guidelines
+
+## 3. Plan Submission and Approval Process
+
+**BEFORE implementing any changes, you MUST:**
+
+- **Write a detailed plan** of all tasks you plan to perform
+- **Request explicit permission** before starting any work
+- **Explain all proposed steps** clearly and comprehensively
+- **Wait for user approval** before proceeding with implementation
+- **Provide alternative approaches** if applicable
+
+## 4. Multiple Review Cycles
+
+**DURING the development process, you MUST:**
+
+- **Never rely on a single review** - conduct multiple thorough examinations
+- **Ensure complete certainty** before making any changes
+- **Perform multi-stage reviews** to catch potential issues
+- **Validate understanding** at each step of the process
+- **Double-check all assumptions** before proceeding
+
+## 5. Comprehensive Relationship Analysis
+
+**BEFORE starting any task, you MUST:**
+
+- **Write a list of all related issues** for the specific topic
+- **Analyze ALL relationships** with other system components
+- **Understand all dependencies** completely before starting work
+- **Examine all connections** between different parts of the system
+- **Map out the complete impact** of proposed changes
+- **Check database relationships** between MongoDB models
+- **Verify API endpoint dependencies** and data flow
+- **Review frontend-backend integration points**
+- **Consider payment gateway impacts** for financial operations
+- **Assess user experience implications** for UI changes
+
+## Enforcement and Compliance
+
+### Pre-Work Checklist
+Every development task MUST pass this checklist before starting:
+
+1. ✅ All related files have been read completely
+2. ✅ All rules have been reviewed and understood
+3. ✅ Detailed plan has been written and submitted
+4. ✅ User approval has been obtained
+5. ✅ All relationships and dependencies have been analyzed
+6. ✅ Multiple review cycles have been completed
+7. ✅ Complete understanding of the task scope has been achieved
+
+### Post-Work Checklist
+Every development task MUST pass this checklist before completion:
+
+1. ✅ Frontend build successful: `cd Front && npm run build`
+2. ✅ Admin build successful: `cd Admin && npm run build`
+3. ✅ All TypeScript compilation errors resolved
+4. ✅ All import/export issues fixed
+5. ✅ Build output generated without critical warnings
+6. ✅ Integration testing completed (if applicable)
+7. ✅ Build verification reported to user
+
+### Violation Consequences
+- **No work should begin** without completing all required steps
+- **No assumptions should be made** without thorough verification
+- **No shortcuts should be taken** in the review process
+- **No changes should be implemented** without explicit approval
+
+### Quality Gates
+- **Documentation Review**: All relevant documentation must be studied
+- **Code Analysis**: All related code must be thoroughly examined
+- **Rule Compliance**: All project rules must be followed
+- **Approval Process**: All changes must be approved before implementation
+- **Relationship Mapping**: All system relationships must be understood
+- **Payment Security**: All payment-related changes must be security reviewed
+- **Database Integrity**: All database changes must maintain data integrity
+- **UI/UX Consistency**: All frontend changes must maintain design consistency
+- **API Compatibility**: All API changes must maintain backward compatibility
+- **Build Verification**: ALL Frontend and Admin changes MUST be followed by successful builds
+
+**These rules are MANDATORY and apply to ALL development activities in this project.**

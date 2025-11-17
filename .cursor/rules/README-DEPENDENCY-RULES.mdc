@@ -1,0 +1,31 @@
+---
+alwaysApply: false
+---
+
+# Project Dependency Rules
+
+This project has strict rules for technology usage. Only the specified technologies in each stack are allowed to be used.
+
+## Backend
+
+Allowed technologies:
+- **FastAPI** - Web framework
+- **Beanie** - ODM for MongoDB
+- **Pydantic** - Data validation
+- **Motor** - Async MongoDB driver
+- **NumPy** - Numerical computations
+
+## Frontend
+
+Allowed technologies:
+- **Svelte** - Frontend framework
+- **DaisyUI** - UI components
+- **Tailwind CSS** - CSS framework
+- **Axios** - HTTP client library
+
+## Important Notes
+
+- ⚠️ Using any technology outside this list will cause an error
+- ✅ Only dependencies specified in the list are allowed
+- 📝 Dev dependencies (like eslint, prettier) can be added to a separate list
+

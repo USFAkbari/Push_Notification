@@ -1,0 +1,399 @@
+---
+alwaysApply: true
+description: Documentation standards and practices for the Shamim Project
+---
+
+# Documentation Standards Rule
+
+## Critical Rule
+**ALL documentation must follow structured organization, comprehensive coverage, and English-only standards for the Shamim Project.**
+
+## Documentation Structure Requirements
+
+### 1. Organized Folder Structure
+**Documentation MUST be organized by stack and topic:**
+
+```
+Documentation Structure:
+├── Backend/                    # FastAPI + Beanie ODM + MongoDB
+│   ├── API/                   # API endpoints documentation
+│   ├── Models/                # Database models documentation
+│   ├── Authentication/        # JWT and auth documentation
+│   ├── Payment/              # Payment gateway documentation (SEP, ZarinPal)
+│   ├── Components/           # Component modules (robo_id, robo_pay, robo_sms, robo_upkeep)
+│   └── Deployment/           # Backend deployment docs
+├── Frontend/                  # React + Chakra UI
+│   ├── Components/           # UI components documentation
+│   ├── Pages/                # Page components and routing
+│   ├── Hooks/                # Custom hooks documentation
+│   ├── Utils/                # Utility functions documentation
+│   └── Payment/              # Payment gateway integration docs
+├── Admin/                     # Vite + TypeScript + Chakra UI
+│   ├── Components/           # Admin UI components documentation
+│   ├── Pages/                # Admin page components
+│   ├── DataTable/            # Data table components and filters
+│   ├── Forms/                # Form components and validation
+│   └── Assets/               # Static assets and libraries
+├── Next/                      # Next.js application
+│   ├── Components/           # Next.js components documentation
+│   ├── Services/             # Service layer documentation
+│   ├── Stores/               # State management documentation
+│   └── Utils/                # Utility functions
+├── FileService/               # File service documentation
+│   ├── API/                  # File service API endpoints
+│   ├── Models/               # File service models
+│   └── Storage/              # File storage documentation
+└── Integration/               # Cross-service documentation
+    ├── Communication/        # Inter-service communication
+    ├── Data/                 # Shared data models
+    ├── Payment/              # Payment gateway integration
+    └── Deployment/           # Full-stack deployment
+```
+
+### 2. Documentation Quality Standards
+
+#### Comprehensive but Concise
+- **Complete**: Cover all aspects of the topic
+- **Concise**: Avoid unnecessary verbosity
+- **Accurate**: Ensure all information is current and correct
+- **Structured**: Use clear headings and logical flow
+
+#### Required Sections for Each Documentation
+```markdown
+# [Topic Name]
+
+## Overview
+Brief description of what this covers
+
+## Prerequisites
+What needs to be understood before reading this
+
+## Implementation
+Step-by-step implementation details
+
+## Examples
+Code examples and usage patterns
+
+## Best Practices
+Recommended approaches and patterns
+
+## Troubleshooting
+Common issues and solutions
+
+## Related Documentation
+Links to related docs in other stacks
+```
+
+### 3. Complete Documentation Review Requirement
+
+**BEFORE writing any new documentation, you MUST:**
+
+1. **Read ALL existing documentation** for the related stack/topic
+2. **Study previous documentation** to understand established patterns
+3. **Check for overlapping content** to avoid duplication
+4. **Identify gaps** that need to be filled
+5. **Ensure consistency** with existing documentation style
+
+#### Documentation Review Process
+```bash
+# Before writing documentation for Backend API:
+1. Read: Back/README.md
+2. Read: Back/changelog.md
+3. Read: Back/sep_doc.md (for payment-related docs)
+4. Read: Back/app/api/*.py (API endpoints)
+5. Read: Back/app/models/*.py (Database models)
+6. Check: Related Frontend documentation
+7. Verify: No duplicate content exists
+```
+
+### 4. English-Only Documentation
+
+**ALL documentation MUST be written in English:**
+
+- ✅ **Correct**: Technical terms, code examples, explanations in English
+- ❌ **Wrong**: Any Persian/Farsi text in documentation files
+- ✅ **Exception**: User-facing content (UI labels, messages) can reference multilingual support
+
+#### Documentation Language Standards
+```markdown
+# ✅ CORRECT - English documentation
+## User Authentication
+The authentication system uses JWT tokens for secure user sessions.
+
+# ❌ WRONG - Mixed language
+## احراز هویت کاربر
+The authentication system uses JWT tokens...
+```
+
+### 5. Documentation Update Requirements
+
+**When updating any system component, you MUST:**
+
+1. **Identify affected documentation** in the same stack
+2. **Update existing documentation** to reflect changes
+3. **Check cross-references** in other stack documentation
+4. **Maintain version consistency** across all related docs
+5. **Update examples** to match new implementations
+
+#### Update Process
+```markdown
+# When updating Backend API endpoint:
+1. Update: Back/README.md (if API changes)
+2. Update: Back/changelog.md (document changes)
+3. Update: Back/app/api/endpoint-name.py (inline documentation)
+4. Update: Front/src/utils/api.js (if frontend affected)
+5. Update: Admin/src/services/api.ts (if admin affected)
+6. Verify: All examples still work
+```
+
+## Documentation File Naming Convention
+
+### File Naming Standards
+```
+Format: [stack]-[topic]-[subtopic].md
+
+Examples:
+- backend-api-authentication.md
+- frontend-components-forms.md
+- admin-datatable-filters.md
+- next-services-api.md
+- fileservice-storage-upload.md
+- integration-payment-gateways.md
+```
+
+### Directory Structure
+```
+docs/
+├── backend/
+│   ├── api/
+│   ├── models/
+│   ├── authentication/
+│   ├── payment/
+│   └── components/
+├── frontend/
+│   ├── components/
+│   ├── pages/
+│   ├── hooks/
+│   └── utils/
+├── admin/
+│   ├── components/
+│   ├── pages/
+│   ├── datatable/
+│   └── forms/
+├── next/
+│   ├── components/
+│   ├── services/
+│   └── stores/
+├── fileservice/
+│   ├── api/
+│   ├── models/
+│   └── storage/
+└── integration/
+    ├── communication/
+    ├── data/
+    ├── payment/
+    └── deployment/
+```
+
+## Documentation Content Standards
+
+### Code Examples
+```markdown
+# ✅ CORRECT - Complete, runnable examples
+```python
+# Backend API endpoint example
+@api.post('/user/')
+async def create_user(user_data: UserCreate):
+    user = User(**user_data.dict())
+    await user.insert()
+    return {
+        'success': True,
+        'data': user.dict(),
+        'error_code': 'OK'
+    }
+```
+
+# ✅ CORRECT - Frontend component example
+```typescript
+// React component with proper typing
+interface UserFormProps {
+  onSubmit: (data: UserData) => void;
+}
+
+function UserForm({ onSubmit }: UserFormProps) {
+  const [formData, setFormData] = useState<UserData>({});
+  
+  return (
+    <Box as="form" onSubmit={handleSubmit}>
+      {/* Form content */}
+    </Box>
+  );
+}
+```
+
+# ✅ CORRECT - Admin component example
+```typescript
+// Admin DataTable component
+import DatePickerInputField from "../../../../components/DatePickerInputField";
+import IranProvinces from "../../../../assets/libs/iranProvinces";
+
+const UserDataTable = () => {
+  return (
+    <DataTable
+      columns={columns}
+      data={users}
+      filters={{
+        date: <DatePickerInputField />,
+        province: <FilterInputField options={IranProvinces} />
+      }}
+    />
+  );
+};
+```
+```
+
+### Cross-References
+```markdown
+# ✅ CORRECT - Link to related documentation
+For more details on user authentication, see [Backend Authentication](backend-authentication-jwt.md).
+
+For frontend integration, refer to [Frontend API Integration](frontend-api-integration.md).
+
+For payment gateway implementation, see [Payment Gateway Integration](integration-payment-gateways.md).
+```
+
+## Project-Specific Documentation Standards
+
+### Backend Documentation
+- **API Endpoints**: Document all FastAPI endpoints with request/response examples
+- **Database Models**: Document all Beanie ODM models with field descriptions
+- **Payment Gateways**: Document SEP and ZarinPal integration thoroughly
+- **Component Modules**: Document robo_id, robo_pay, robo_sms, robo_upkeep modules
+- **Authentication**: Document JWT token handling and user management
+
+### Frontend Documentation
+- **Components**: Document all reusable React components
+- **Pages**: Document page components and routing
+- **Payment Integration**: Document payment gateway selection and handling
+- **State Management**: Document Zustand store usage
+- **UI Standards**: Document Persian date picker, phone number conversion, province/city dropdowns
+
+### Admin Documentation
+- **DataTable Components**: Document table components and filtering
+- **Form Components**: Document form validation and submission
+- **Date Pickers**: Document Persian date picker implementation
+- **Location Selection**: Document province/city dropdown implementation
+- **Build Process**: Document Vite build configuration
+
+### Next.js Documentation
+- **Components**: Document Next.js specific components
+- **Services**: Document API service layer
+- **State Management**: Document store implementations
+- **SEO**: Document SEO optimization practices
+
+### File Service Documentation
+- **API Endpoints**: Document file upload/download endpoints
+- **Storage**: Document file storage and management
+- **Models**: Document file-related data models
+- **Security**: Document file access and permissions
+
+## Documentation Maintenance
+
+### Regular Review Schedule
+- **Weekly**: Review documentation for accuracy
+- **After each major update**: Update all related documentation
+- **Before releases**: Ensure all documentation is current
+- **Monthly**: Check for broken links and outdated examples
+
+### Documentation Quality Checklist
+- [ ] All sections are complete and accurate
+- [ ] Code examples are tested and working
+- [ ] Cross-references are valid and helpful
+- [ ] No duplicate content exists
+- [ ] English-only content (except UI references)
+- [ ] Proper file naming and organization
+- [ ] Related documentation has been reviewed
+- [ ] Examples match current implementation
+- [ ] Payment gateway documentation is up-to-date
+- [ ] UI component standards are documented
+
+## Enforcement
+
+### Pre-Documentation Checklist
+Before writing any documentation:
+
+1. ✅ **Stack identified**: Which stack does this belong to? (Back/Front/Admin/Next/FileService)
+2. ✅ **Topic categorized**: What specific topic within the stack?
+3. ✅ **Existing docs reviewed**: Have I read all related documentation?
+4. ✅ **Gaps identified**: What's missing from current documentation?
+5. ✅ **Update plan**: What existing docs need updates?
+
+### Post-Documentation Checklist
+After writing documentation:
+
+1. ✅ **Content complete**: All required sections included?
+2. ✅ **Examples tested**: Do all code examples work?
+3. ✅ **Cross-references updated**: Are related docs updated?
+4. ✅ **English-only verified**: No non-English content?
+5. ✅ **File properly named**: Follows naming convention?
+6. ✅ **Directory correct**: Placed in proper stack folder?
+7. ✅ **Build verification**: Does the documented code build successfully?
+
+## Project-Specific Requirements
+
+### Payment Gateway Documentation
+- **SEP Integration**: Document SEP payment gateway implementation
+- **ZarinPal Integration**: Document ZarinPal payment gateway implementation
+- **Frontend Integration**: Document payment gateway selection in frontend
+- **Error Handling**: Document payment error handling and user feedback
+
+### UI Component Documentation
+- **Persian Date Picker**: Document DatePickerInputField usage
+- **Phone Number Conversion**: Document English digit conversion
+- **Province/City Dropdowns**: Document IranProvinces and IranCities usage
+- **DataTable Components**: Document table filtering and pagination
+
+### Database Documentation
+- **Beanie ODM**: Document proper count() method usage
+- **MongoDB Models**: Document all database models and relationships
+- **Query Patterns**: Document common query patterns and best practices
+
+### Build and Deployment Documentation
+- **Frontend Build**: Document npm run build process
+- **Admin Build**: Document Vite build configuration
+- **Backend Testing**: Document Python testing procedures
+- **Docker Deployment**: Document containerization and deployment
+
+## Goals
+
+### Primary Objectives
+- **Comprehensive Coverage**: Every system component documented
+- **Easy Navigation**: Clear structure and organization
+- **Current Information**: Always up-to-date documentation
+- **Consistent Quality**: Uniform standards across all stacks
+- **Cross-Stack Integration**: Clear connections between services
+
+### Success Metrics
+- All major features have complete documentation
+- Documentation is easily discoverable and navigable
+- Code examples are tested and working
+- No duplicate or conflicting information
+- Regular updates maintain accuracy
+- Payment gateway integration is thoroughly documented
+- UI component standards are clearly defined
+
+## Summary
+
+**CRITICAL: Follow structured documentation standards for comprehensive, accurate, and maintainable documentation across all Shamim Project stacks.**
+
+Key Requirements:
+- Organize by stack and topic in clear folder structure (Back/Front/Admin/Next/FileService)
+- Write comprehensive but concise documentation in English only
+- Review all existing documentation before writing new content
+- Update related documentation when making system changes
+- Maintain consistent quality and structure across all documentation
+- Use proper naming conventions and cross-references
+- Test all code examples and keep them current
+- Document payment gateway integration thoroughly
+- Follow UI component standards and best practices
+- Ensure build verification for all documented code

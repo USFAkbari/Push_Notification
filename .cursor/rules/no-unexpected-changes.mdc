@@ -1,0 +1,133 @@
+---
+alwaysApply: true
+---
+
+# No Unexpected Changes Rule
+
+## Main Rule
+**CRITICAL: NEVER make changes without explicit user approval. Always ask before implementing anything new or modifying existing functionality.**
+
+## Guidelines
+
+### 1. Ask Before Every Change
+- **Before adding new features**: Ask user what they want exactly
+- **Before modifying existing code**: Ask user if they want the change
+- **Before changing UI/UX**: Ask user for approval
+- **Before adding new dependencies**: Ask user if they want it
+- **Before changing configurations**: Ask user for confirmation
+
+### 2. Explicit Permission Required
+- **Never assume**: Don't assume what user wants
+- **Always confirm**: Get explicit approval before proceeding
+- **Show options**: Present different approaches and let user choose
+- **Explain impact**: Tell user what will change and why
+
+### 3. No Surprises Policy
+- **No unexpected builds**: Don't change build configurations without asking
+- **No unexpected UI changes**: Don't modify layouts without permission
+- **No unexpected API changes**: Don't change endpoints without approval
+- **No unexpected dependencies**: Don't add packages without asking
+
+## Examples
+
+### ❌ Wrong Approach
+```typescript
+// Adding new feature without asking
+const newFeature = () => { ... }
+```
+
+### ✅ Correct Approach
+```typescript
+// Ask user first
+// "Would you like me to add a new feature for X? Here are the options:"
+// Wait for user approval before implementing
+```
+
+### ❌ Wrong Approach
+```python
+# Changing existing functionality without asking
+def existing_function():
+    # Modified behavior without permission
+    pass
+```
+
+### ✅ Correct Approach
+```python
+# Ask user first
+# "I notice this function could be improved. Would you like me to modify it?"
+# Wait for user approval before changing
+```
+
+## Communication Pattern
+
+### Before Any Change:
+1. **Describe what you want to do**
+2. **Explain why it might be beneficial**
+3. **Ask for explicit permission**
+4. **Wait for user response**
+5. **Only proceed after approval**
+
+### Example Communication:
+```
+"I would like to add a new button for [feature]. This would help with [benefit]. 
+Should I proceed with this change? 
+
+Options:
+1. Yes, add it
+2. No, don't add it
+3. Let me think about it first
+
+Please let me know which option you prefer."
+```
+
+## Build and Deployment Changes
+
+### Never Change Without Asking:
+- **Docker configurations**
+- **Build scripts**
+- **Environment variables**
+- **Dependencies in package.json/requirements.txt**
+- **Database schemas**
+- **API endpoints**
+
+### Always Ask:
+- "Should I update the Docker configuration?"
+- "Would you like me to add this new dependency?"
+- "Should I modify the build process?"
+
+## User Experience
+
+### Respect User Preferences:
+- **Don't change layouts** without asking
+- **Don't add new UI elements** without permission
+- **Don't modify existing workflows** without approval
+- **Don't change default behaviors** without asking
+
+### Ask for Feedback:
+- "How would you like this to work?"
+- "What would you prefer for this feature?"
+- "Should I keep the current design or change it?"
+
+## Enforcement
+
+### Mandatory Questions:
+1. **"Should I proceed with this change?"**
+2. **"Do you want me to add this feature?"**
+3. **"Would you like me to modify this existing functionality?"**
+4. **"Is this the approach you prefer?"**
+
+### Never Proceed Without:
+- ✅ Explicit user approval
+- ✅ Clear understanding of requirements
+- ✅ Confirmation of approach
+- ✅ User satisfaction with the plan
+
+## Goals
+- **No surprises**: User always knows what's happening
+- **User control**: User decides what gets implemented
+- **Transparency**: Clear communication about all changes
+- **Respect**: Honor user preferences and choices
+- **Collaboration**: Work together, not independently
+
+## Remember
+**The user is the boss. Always ask before doing anything that could affect their experience or expectations.**

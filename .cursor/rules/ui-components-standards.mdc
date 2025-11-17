@@ -1,0 +1,281 @@
+---
+alwaysApply: true
+description: UI Components and Input Standards Rules
+---
+
+# UI Components and Input Standards Rules
+
+## Critical Rules for UI Components and User Inputs
+
+### 1. Persian Date Picker Rule
+**ALWAYS use Persian date picker for all date inputs in the project.**
+
+#### When to Use Persian Date Picker:
+- ✅ All date inputs in forms
+- ✅ Date filters in tables
+- ✅ Date selection in modals
+- ✅ Any date-related user input
+
+#### Implementation:
+```typescript
+// ✅ CORRECT - Use Persian Date Picker
+import DatePickerInputField from "../../../../components/DatePickerInputField";
+import { DateObject } from "react-multi-date-picker";
+
+<DatePickerInputField
+  value={formData.date ? new DateObject(formData.date) : undefined}
+  onChange={(date) => setFormData({ 
+    ...formData, 
+    date: date ? date.toDate().toISOString().split('T')[0] : undefined 
+  })}
+  maxDate={new Date()}
+/>
+```
+
+#### ❌ WRONG - Don't use HTML date input
+```html
+<!-- ❌ WRONG - Don't use HTML date input -->
+<input type="date" />
+```
+
+### 2. Phone Number Input Rule
+**ALWAYS convert phone number inputs to English digits, regardless of user input language.**
+
+#### When to Apply:
+- ✅ All phone number inputs in forms
+- ✅ User registration forms
+- ✅ Admin forms
+- ✅ Any phone number field
+
+#### Implementation:
+```typescript
+// ✅ CORRECT - Convert to English digits
+const convertToEnglishDigits = (text: string): string => {
+  const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+  const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+  const englishDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+  
+  let result = text;
+  
+  // Convert Persian digits
+  persianDigits.forEach((digit, index) => {
+    result = result.replace(new RegExp(digit, 'g'), englishDigits[index]);
+  });
+  
+  // Convert Arabic digits
+  arabicDigits.forEach((digit, index) => {
+    result = result.replace(new RegExp(digit, 'g'), englishDigits[index]);
+  });
+  
+  return result;
+};
+
+// Usage in form
+<Input
+  value={formData.phone}
+  onChange={(e) => {
+    const englishPhone = convertToEnglishDigits(e.target.value);
+    setFormData({ ...formData, phone: englishPhone });
+  }}
+  placeholder="09123456789"
+  type="tel"
+/>
+```
+
+#### ❌ WRONG - Don't accept mixed digits
+```typescript
+// ❌ WRONG - Don't accept mixed digits
+<Input
+  value={formData.phone}
+  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+  // This allows Persian/Arabic digits
+/>
+```
+
+### 3. Province and City Dropdown Rule
+**ALWAYS use the existing province and city dropdown components from the project.**
+
+#### When to Use:
+- ✅ All forms requiring province/city selection
+- ✅ User registration forms
+- ✅ Admin forms
+- ✅ Any location selection
+
+#### Implementation:
+```typescript
+// ✅ CORRECT - Use existing components
+import IranProvinces from "../../../../assets/libs/iranProvinces";
+import IranCities from "../../../../assets/libs/iranCities";
+import FilterInputField from "../../../../components/DataTable/partials/FilterInputField";
+
+// Province selection
+<FilterInputField
+  filterKey="state"
+  label="استان"
+  type="select"
+  value={formData.state}
+  onChange={(value) => handleStateChange(value)}
+  options={IranProvinces}
+/>
+
+// City selection
+<Select
+  value={formData.city}
+  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+  placeholder="ابتدا استان را انتخاب کنید"
+  isDisabled={!formData.state}
+>
+  <option value="">انتخاب شهر</option>
+  {formData.state && IranCities[formData.state]?.map((city) => (
+    <option key={city.value} value={city.value}>
+      {city.label}
+    </option>
+  ))}
+</Select>
+```
+
+#### ❌ WRONG - Don't create custom dropdowns
+```typescript
+// ❌ WRONG - Don't create custom province/city dropdowns
+<Select>
+  <option value="tehran">تهران</option>
+  <option value="isfahan">اصفهان</option>
+  // ... hardcoded options
+</Select>
+```
+
+## File Locations Reference
+
+### Persian Date Picker Component:
+- **Location**: `Admin/src/components/DatePickerInputField/index.tsx`
+- **Usage**: Import and use for all date inputs
+
+### Province/City Data:
+- **Provinces**: `Admin/src/assets/libs/iranProvinces.ts`
+- **Cities**: `Admin/src/assets/libs/iranCities.ts`
+- **Filter Component**: `Admin/src/components/DataTable/partials/FilterInputField/index.tsx`
+
+### Phone Number Utilities:
+- **Backend**: `Back/app/components/utils/phone.py` - `normalize_phone_number()`
+- **Frontend**: Create utility function as shown above
+
+## Implementation Checklist
+
+### For Date Inputs:
+1. ✅ Import `DatePickerInputField` component
+2. ✅ Import `DateObject` from `react-multi-date-picker`
+3. ✅ Convert date values to/from DateObject format
+4. ✅ Set appropriate maxDate if needed
+
+### For Phone Number Inputs:
+1. ✅ Create `convertToEnglishDigits` utility function
+2. ✅ Apply conversion in onChange handler
+3. ✅ Use type="tel" for input
+4. ✅ Validate phone format after conversion
+
+### For Province/City Selection:
+1. ✅ Import `IranProvinces` and `IranCities`
+2. ✅ Use `FilterInputField` for province selection
+3. ✅ Use conditional city dropdown based on selected province
+4. ✅ Handle state changes to reset city selection
+
+## Examples of Correct Implementation
+
+### Complete Form Example:
+```typescript
+import DatePickerInputField from "../../../../components/DatePickerInputField";
+import IranProvinces from "../../../../assets/libs/iranProvinces";
+import IranCities from "../../../../assets/libs/iranCities";
+import { DateObject } from "react-multi-date-picker";
+
+const MyForm = () => {
+  const [formData, setFormData] = useState({
+    name: "",
+    phone: "",
+    state: "",
+    city: "",
+    birthDate: "",
+  });
+
+  const convertToEnglishDigits = (text: string): string => {
+    // Implementation as shown above
+  };
+
+  const handleStateChange = (state: string) => {
+    setFormData({ ...formData, state, city: "" });
+  };
+
+  return (
+    <form>
+      {/* Phone with English digit conversion */}
+      <Input
+        value={formData.phone}
+        onChange={(e) => {
+          const englishPhone = convertToEnglishDigits(e.target.value);
+          setFormData({ ...formData, phone: englishPhone });
+        }}
+        placeholder="09123456789"
+        type="tel"
+      />
+
+      {/* Province selection */}
+      <FilterInputField
+        filterKey="state"
+        label="استان"
+        type="select"
+        value={formData.state}
+        onChange={handleStateChange}
+        options={IranProvinces}
+      />
+
+      {/* City selection */}
+      <Select
+        value={formData.city}
+        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+        isDisabled={!formData.state}
+      >
+        <option value="">انتخاب شهر</option>
+        {formData.state && IranCities[formData.state]?.map((city) => (
+          <option key={city.value} value={city.value}>
+            {city.label}
+          </option>
+        ))}
+      </Select>
+
+      {/* Persian date picker */}
+      <DatePickerInputField
+        value={formData.birthDate ? new DateObject(formData.birthDate) : undefined}
+        onChange={(date) => setFormData({ 
+          ...formData, 
+          birthDate: date ? date.toDate().toISOString().split('T')[0] : undefined 
+        })}
+        maxDate={new Date()}
+      />
+    </form>
+  );
+};
+```
+
+## Enforcement
+
+### Pre-Implementation Checklist:
+1. ✅ Check if date input is needed → Use Persian Date Picker
+2. ✅ Check if phone input is needed → Add English digit conversion
+3. ✅ Check if province/city selection is needed → Use existing components
+
+### Code Review Checklist:
+1. ✅ All date inputs use `DatePickerInputField`
+2. ✅ All phone inputs convert to English digits
+3. ✅ All province/city selections use existing data
+4. ✅ No hardcoded location options
+5. ✅ Proper state management for dependent dropdowns
+
+## Summary
+
+**CRITICAL: Always follow these three rules for consistent UI and data integrity:**
+
+1. **Persian Date Picker**: Use `DatePickerInputField` for all date inputs
+2. **English Phone Digits**: Convert all phone inputs to English digits
+3. **Standard Location Dropdowns**: Use `IranProvinces` and `IranCities` data
+
+These rules ensure consistency, data integrity, and proper user experience across the entire application.
