@@ -141,7 +141,7 @@ source venv/bin/activate  # Linux/macOS
 pip install -r requirements.txt
 
 # Generate VAPID keys
-python generate_vapid_keys.py
+python3 generate_vapid_keys.py
 
 # Copy the generated keys (you'll see output like):
 # VAPID_PUBLIC_KEY=...
@@ -166,7 +166,7 @@ EOF
 
 ```bash
 # From project root directory
-docker-compose up -d --build
+docker compose up -d --build
 
 # This will:
 # - Build backend Docker image
@@ -180,7 +180,7 @@ docker-compose up -d --build
 
 ```bash
 # Check service status
-docker-compose ps
+docker compose ps
 
 # You should see all three services in "Up" status:
 # - push-mongodb (healthy)
