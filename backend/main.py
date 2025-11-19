@@ -223,8 +223,12 @@ async def subscribe(subscription: SubscriptionData):
 
 
 @app.post("/push/single/{user_id}")
-async def push_single(user_id: str, payload: PushPayload):
-    """Send push notification to a specific user."""
+async def push_single(
+    user_id: str,
+    payload: PushPayload,
+    current_admin: dict = Depends(get_current_admin)
+):
+    """Send push notification to a specific user. Requires admin authentication."""
     try:
         # Find subscription by user_id
         subscription = await PushSubscription.find_one({"user_id": user_id})
@@ -255,8 +259,11 @@ async def push_single(user_id: str, payload: PushPayload):
 
 
 @app.post("/push/broadcast")
-async def push_broadcast(payload: PushPayload):
-    """Send push notification to all subscribed users."""
+async def push_broadcast(
+    payload: PushPayload,
+    current_admin: dict = Depends(get_current_admin)
+):
+    """Send push notification to all subscribed users. Requires admin authentication."""
     try:
         # Get all subscriptions
         subscriptions = await PushSubscription.find_all().to_list()
@@ -488,6 +495,42 @@ async def reset_application_secret(
         raise HTTPException(status_code=500, detail=f"Error resetting secret: {str(e)}")
 
 
+@app.delete("/admin/applications/{app_id}")
+async def delete_application(
+    app_id: str,
+    current_admin: dict = Depends(get_current_admin)
+):
+    """Delete an application. Cannot delete if users are linked to it."""
+    try:
+        application = await Application.get(app_id)
+        if not application:
+            raise HTTPException(status_code=404, detail="Application not found")
+        
+        # Check if any users are linked to this application
+        linked_users_count = await PushSubscription.find({"application_id": app_id}).count()
+        
+        if linked_users_count > 0:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot delete application: {linked_users_count} user(s) are linked to this application. Please remove or reassign users first."
+            )
+        
+        # Delete the application
+        await application.delete()
+        
+        logger.info(f"Application {app_id} ({application.name}) deleted by admin {current_admin.get('username')}")
+        
+        return {
+            "success": True,
+            "message": f"Application {application.name} deleted successfully"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting application: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error deleting application: {str(e)}")
+
+
 @app.get("/admin/users", response_model=UserListResponse)
 async def list_users(
     limit: int = Query(10, ge=1, le=100),
@@ -611,6 +654,33 @@ async def get_user(
     except Exception as e:
         logger.error(f"Error getting user: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error getting user: {str(e)}")
+
+
+@app.delete("/admin/users/{user_id}")
+async def delete_user(
+    user_id: str,
+    current_admin: dict = Depends(get_current_admin)
+):
+    """Delete a user subscription."""
+    try:
+        subscription = await PushSubscription.get(user_id)
+        if not subscription:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Delete the subscription
+        await subscription.delete()
+        
+        logger.info(f"User {user_id} deleted by admin {current_admin.get('username')}")
+        
+        return {
+            "success": True,
+            "message": f"User {user_id} deleted successfully"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting user: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error deleting user: {str(e)}")
 
 
 # ==================== Admin Push Notification Endpoints ====================

@@ -149,6 +149,44 @@
     }
   }
 
+  // Delete application
+  async function deleteApplication(appId, appName) {
+    if (!confirm(`Are you sure you want to delete application "${appName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      isLoading = true;
+      await axios.delete(`/admin/applications/${appId}`);
+      showMessage(`Application "${appName}" deleted successfully`, 'success');
+      await loadApplications();
+    } catch (error) {
+      showMessage(error.response?.data?.detail || 'Failed to delete application', 'error');
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  // Delete user
+  async function deleteUser(userId, userIdentifier) {
+    const displayName = userIdentifier || userId;
+    if (!confirm(`Are you sure you want to delete user "${displayName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      isLoading = true;
+      await axios.delete(`/admin/users/${userId}`);
+      showMessage(`User "${displayName}" deleted successfully`, 'success');
+      await loadUsers();
+      await loadAllUsersForSelection();
+    } catch (error) {
+      showMessage(error.response?.data?.detail || 'Failed to delete user', 'error');
+    } finally {
+      isLoading = false;
+    }
+  }
+
   // Load all users for selection (for push notifications)
   async function loadAllUsersForSelection() {
     try {
@@ -460,9 +498,14 @@
                             <td>{app.store_fingerprint || '-'}</td>
                             <td>{new Date(app.created_at).toLocaleString()}</td>
                             <td>
-                              <button class="btn btn-sm btn-warning" on:click={() => resetSecret(app.id)} disabled={isLoading}>
-                                Reset Secret
-                              </button>
+                              <div class="flex gap-2">
+                                <button class="btn btn-sm btn-warning" on:click={() => resetSecret(app.id)} disabled={isLoading}>
+                                  Reset Secret
+                                </button>
+                                <button class="btn btn-sm btn-error" on:click={() => deleteApplication(app.id, app.name)} disabled={isLoading}>
+                                  Delete
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         {/each}
@@ -568,7 +611,12 @@
                             <td class="max-w-xs truncate">{user.endpoint}</td>
                             <td>{new Date(user.created_at).toLocaleString()}</td>
                             <td>
-                              <button class="btn btn-sm btn-info" on:click={() => getUserDetails(user.id)}>View Details</button>
+                              <div class="flex gap-2">
+                                <button class="btn btn-sm btn-info" on:click={() => getUserDetails(user.id)}>View Details</button>
+                                <button class="btn btn-sm btn-error" on:click={() => deleteUser(user.id, user.user_id)} disabled={isLoading}>
+                                  Delete
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         {/each}

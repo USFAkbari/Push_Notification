@@ -6,6 +6,14 @@ A minimal, full-stack Web Push Notification application with FastAPI backend and
 
 📖 **New to this project?** Start here: [QUICKSTART.md](QUICKSTART.md) - Step-by-step instructions to get up and running quickly.
 
+## API Documentation
+
+🔧 **Want to use the API?** Check out:
+- [QUICK_API_GUIDE.md](QUICK_API_GUIDE.md) - Quick reference for curl commands
+- [API_DOCUMENTATION.md](API_DOCUMENTATION.md) - Complete API documentation with examples
+
+**Important:** All push notification endpoints now require admin authentication for security. See the API documentation for authentication details.
+
 ## Prerequisites
 
 ### For Local Development:
@@ -490,7 +498,13 @@ Stores a new push subscription.
 ```
 
 ### `POST /push/single/{user_id}`
-Sends a push notification to a specific user.
+Sends a push notification to a specific user. **Requires admin authentication.**
+
+**Headers:**
+```
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
+```
 
 **Request Body:**
 ```json
@@ -511,8 +525,16 @@ Sends a push notification to a specific user.
 }
 ```
 
+**Note:** See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for complete authentication and usage examples.
+
 ### `POST /push/broadcast`
-Sends a push notification to all subscribed users.
+Sends a push notification to all subscribed users. **Requires admin authentication.**
+
+**Headers:**
+```
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
+```
 
 **Request Body:**
 ```json
@@ -535,6 +557,8 @@ Sends a push notification to all subscribed users.
   "total": 5
 }
 ```
+
+**Note:** See [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for complete authentication and usage examples.
 
 ## Testing
 

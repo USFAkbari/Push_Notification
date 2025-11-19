@@ -6,10 +6,9 @@
   let subscription = null;
   let vapidPublicKey = null;
   let userId = '';
-  let pushTitle = 'Test Notification';
-  let pushBody = 'This is a test push notification';
   let isLoading = false;
   let message = '';
+  let messageType = 'info'; // info, success, error
 
   // Check if push notifications are supported
   function checkSupport() {
@@ -28,6 +27,7 @@
     } catch (error) {
       console.error('Error fetching VAPID public key:', error);
       message = 'Failed to fetch VAPID public key';
+      messageType = 'error';
     }
   }
 
@@ -45,12 +45,15 @@
       if (permission === 'granted') {
         subscriptionStatus = 'granted';
         message = 'Notification permission granted';
+        messageType = 'success';
       } else if (permission === 'denied') {
         subscriptionStatus = 'denied';
         message = 'Notification permission denied';
+        messageType = 'error';
       } else {
         subscriptionStatus = 'default';
         message = 'Notification permission default';
+        messageType = 'info';
       }
     } catch (error) {
       console.error('Error requesting permission:', error);
@@ -160,6 +163,7 @@
       subscription = pushSubscription;
       subscriptionStatus = 'subscribed';
       message = 'Successfully subscribed to push notifications!';
+      messageType = 'success';
     } catch (error) {
       console.error('Unexpected error during subscription:', error);
       message = `Failed to subscribe: ${error.message || 'Unknown error'}`;
@@ -194,50 +198,8 @@
     }
   }
 
-  // Send test push to single user
-  async function sendSinglePush() {
-    if (!userId) {
-      message = 'Please enter a user ID';
-      return;
-    }
-
-    try {
-      isLoading = true;
-      const payload = {
-        title: pushTitle,
-        body: pushBody,
-        data: { timestamp: new Date().toISOString() }
-      };
-
-      await axios.post(`/push/single/${userId}`, payload);
-      message = `Push notification sent to user ${userId}`;
-    } catch (error) {
-      console.error('Error sending push:', error);
-      message = error.response?.data?.detail || 'Failed to send push notification';
-    } finally {
-      isLoading = false;
-    }
-  }
-
-  // Send broadcast push to all users
-  async function sendBroadcastPush() {
-    try {
-      isLoading = true;
-      const payload = {
-        title: pushTitle,
-        body: pushBody,
-        data: { timestamp: new Date().toISOString() }
-      };
-
-      const response = await axios.post('/push/broadcast', payload);
-      message = `Broadcast sent: ${response.data.success_count} successful, ${response.data.failed_count} failed`;
-    } catch (error) {
-      console.error('Error sending broadcast:', error);
-      message = error.response?.data?.detail || 'Failed to send broadcast';
-    } finally {
-      isLoading = false;
-    }
-  }
+  // Note: Push sending functionality has been moved to Admin panel
+  // This public app is only for subscribing to notifications
 
   // Check existing subscription on mount
   async function checkExistingSubscription() {
@@ -328,10 +290,11 @@
   <div class="max-w-4xl mx-auto">
     <div class="card bg-base-100 shadow-xl">
       <div class="card-body">
-        <h1 class="card-title text-3xl mb-4">Web Push Notification PWA</h1>
+        <h1 class="card-title text-3xl mb-4">🔔 Push Notification Service</h1>
+        <p class="text-gray-600 mb-4">Subscribe to receive push notifications on this device</p>
         
         {#if message}
-          <div class="alert alert-info mb-4">
+          <div class="alert alert-{messageType === 'error' ? 'error' : messageType === 'success' ? 'success' : 'info'} mb-4">
             <span>{message}</span>
           </div>
         {/if}
@@ -392,42 +355,16 @@
             </div>
           </div>
 
-          <!-- Send Push Notifications -->
+          <!-- Information Card -->
           <div class="card bg-base-200 mb-4">
             <div class="card-body">
-              <h2 class="card-title">Send Push Notifications</h2>
-              
-              <div class="form-control mb-4">
-                <label class="label">
-                  <span class="label-text">Notification Title</span>
-                </label>
-                <input 
-                  type="text" 
-                  placeholder="Notification title" 
-                  class="input input-bordered w-full"
-                  bind:value={pushTitle}
-                />
-              </div>
-
-              <div class="form-control mb-4">
-                <label class="label">
-                  <span class="label-text">Notification Body</span>
-                </label>
-                <textarea 
-                  placeholder="Notification body" 
-                  class="textarea textarea-bordered w-full"
-                  bind:value={pushBody}
-                ></textarea>
-              </div>
-
-              <div class="flex gap-2 flex-wrap">
-                <button class="btn btn-warning" on:click={sendSinglePush} disabled={isLoading || !userId}>
-                  {isLoading ? 'Sending...' : 'Send to User'}
-                </button>
-                <button class="btn btn-info" on:click={sendBroadcastPush} disabled={isLoading}>
-                  {isLoading ? 'Sending...' : 'Broadcast to All'}
-                </button>
-              </div>
+              <h2 class="card-title">About Push Notifications</h2>
+              <p class="text-sm text-gray-600 mb-2">
+                You have successfully subscribed to push notifications. You will receive notifications sent by administrators.
+              </p>
+              <p class="text-sm text-gray-600">
+                To send push notifications, please use the <a href="/admin" class="link link-primary">Admin Panel</a>.
+              </p>
             </div>
           </div>
         {/if}
