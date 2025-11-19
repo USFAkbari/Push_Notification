@@ -14,8 +14,8 @@ if (API_BASE_URL) {
   axios.defaults.baseURL = '';
 }
 
-// Register service worker (only for main app, not admin)
-if ('serviceWorker' in navigator && !window.location.pathname.startsWith('/admin')) {
+// Register service worker (only for main app at /app route)
+if ('serviceWorker' in navigator && window.location.pathname.startsWith('/app')) {
   window.addEventListener('load', async () => {
     try {
       const registration = await navigator.serviceWorker.register('/service-worker.js');
@@ -26,13 +26,13 @@ if ('serviceWorker' in navigator && !window.location.pathname.startsWith('/admin
   });
 }
 
-// Simple routing: check if path starts with /admin
-const isAdmin = window.location.pathname.startsWith('/admin');
+// Routing: Admin is default (/), public app is at /app
+const isPublicApp = window.location.pathname.startsWith('/app');
 
 // Initialize appropriate Svelte app
-const app = isAdmin 
-  ? new Admin({ target: document.getElementById('app') })
-  : new App({ target: document.getElementById('app') });
+const app = isPublicApp 
+  ? new App({ target: document.getElementById('app') })
+  : new Admin({ target: document.getElementById('app') });
 
 export default app;
 

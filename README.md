@@ -171,6 +171,38 @@ Before deploying with Docker, ensure you have:
 
 ### Quick Start with Docker
 
+#### Fast Deployment Script (Recommended)
+
+The fastest way to deploy is using the provided deployment script:
+
+```bash
+# Quick deployment (build, start, and wait for services)
+./deploy.sh
+
+# Or with admin user creation
+ADMIN_USERNAME=admin ADMIN_PASSWORD=yourpassword ./deploy.sh
+```
+
+**Available commands:**
+- `./deploy.sh` or `./deploy.sh quick` - Quick deployment
+- `./deploy.sh rebuild` - Rebuild and restart everything
+- `./deploy.sh restart` - Restart services
+- `./deploy.sh stop` - Stop services
+- `./deploy.sh status` - Show service status
+- `./deploy.sh logs` - View and follow logs
+- `./deploy.sh admin <username> <password>` - Create admin user
+- `./deploy.sh clean` - Remove all containers and volumes
+- `./deploy.sh help` - Show all commands
+
+The script automatically:
+- Checks Docker and Docker Compose installation
+- Verifies VAPID keys (auto-generates if missing)
+- Builds and starts all containers
+- Waits for services to be healthy
+- Shows service status and URLs
+
+#### Manual Docker Deployment
+
 1. **Generate VAPID keys:**
    ```bash
    cd backend

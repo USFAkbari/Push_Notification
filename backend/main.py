@@ -106,6 +106,21 @@ class UserListResponse(BaseModel):
     offset: int
 
 
+class PushToUsersRequest(BaseModel):
+    """Push notification request for list of users."""
+    user_ids: List[str]
+    payload: PushPayload
+
+
+class PushResponse(BaseModel):
+    """Push notification response model."""
+    success: bool
+    message: str
+    success_count: int = 0
+    failed_count: int = 0
+    total: int = 0
+
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize database and ensure VAPID keys exist on startup."""
@@ -478,9 +493,13 @@ async def list_users(
     limit: int = Query(10, ge=1, le=100),
     offset: int = Query(0, ge=0),
     application_name: Optional[str] = Query(None),
+    application_id: Optional[str] = Query(None),
+    user_id: Optional[str] = Query(None),
+    created_from: Optional[str] = Query(None),
+    created_to: Optional[str] = Query(None),
     current_admin: dict = Depends(get_current_admin)
 ):
-    """List all users with pagination and optional filtering by application name."""
+    """List all users with pagination and optional filtering."""
     try:
         # Build filter
         filter_dict = {}
@@ -497,6 +516,34 @@ async def list_users(
                     offset=offset
                 )
             filter_dict["application_id"] = str(application.id)
+        
+        # Filter by application_id if provided
+        if application_id:
+            filter_dict["application_id"] = application_id
+        
+        # Filter by user_id (partial match using regex)
+        if user_id:
+            filter_dict["user_id"] = {"$regex": user_id, "$options": "i"}
+        
+        # Filter by created_from date
+        if created_from:
+            try:
+                from_date = datetime.fromisoformat(created_from.replace('Z', '+00:00'))
+                if "created_at" not in filter_dict:
+                    filter_dict["created_at"] = {}
+                filter_dict["created_at"]["$gte"] = from_date
+            except ValueError:
+                logger.warning(f"Invalid created_from date format: {created_from}")
+        
+        # Filter by created_to date
+        if created_to:
+            try:
+                to_date = datetime.fromisoformat(created_to.replace('Z', '+00:00'))
+                if "created_at" not in filter_dict:
+                    filter_dict["created_at"] = {}
+                filter_dict["created_at"]["$lte"] = to_date
+            except ValueError:
+                logger.warning(f"Invalid created_to date format: {created_to}")
         
         # Get total count
         total = await PushSubscription.find(filter_dict).count()
@@ -564,6 +611,222 @@ async def get_user(
     except Exception as e:
         logger.error(f"Error getting user: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error getting user: {str(e)}")
+
+
+# ==================== Admin Push Notification Endpoints ====================
+
+@app.post("/admin/push/single/{user_id}", response_model=PushResponse)
+async def admin_push_single(
+    user_id: str,
+    payload: PushPayload,
+    current_admin: dict = Depends(get_current_admin)
+):
+    """Send push notification to a specific user (admin endpoint)."""
+    try:
+        # Find subscription by user_id
+        subscription = await PushSubscription.find_one({"user_id": user_id})
+        
+        if not subscription:
+            raise HTTPException(status_code=404, detail="Subscription not found")
+        
+        # Prepare subscription info for pywebpush
+        subscription_info = {
+            "endpoint": subscription.endpoint,
+            "keys": subscription.keys
+        }
+        
+        # Send push notification
+        success = await send_push_notification(
+            subscription_info=subscription_info,
+            payload=payload.dict()
+        )
+        
+        if not success:
+            return PushResponse(
+                success=False,
+                message="Failed to send push notification",
+                success_count=0,
+                failed_count=1,
+                total=1
+            )
+        
+        return PushResponse(
+            success=True,
+            message="Push notification sent",
+            success_count=1,
+            failed_count=0,
+            total=1
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error sending push to user {user_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error sending push: {str(e)}")
+
+
+@app.post("/admin/push/broadcast", response_model=PushResponse)
+async def admin_push_broadcast(
+    payload: PushPayload,
+    current_admin: dict = Depends(get_current_admin)
+):
+    """Send push notification to all subscribed users (admin endpoint)."""
+    try:
+        # Get all subscriptions
+        subscriptions = await PushSubscription.find({}).to_list()
+        
+        if not subscriptions:
+            raise HTTPException(status_code=404, detail="No subscriptions found")
+        
+        success_count = 0
+        failed_count = 0
+        
+        for subscription in subscriptions:
+            subscription_info = {
+                "endpoint": subscription.endpoint,
+                "keys": subscription.keys
+            }
+            
+            success = await send_push_notification(
+                subscription_info=subscription_info,
+                payload=payload.dict()
+            )
+            
+            if success:
+                success_count += 1
+            else:
+                failed_count += 1
+        
+        return PushResponse(
+            success=True,
+            message="Broadcast push notifications sent",
+            success_count=success_count,
+            failed_count=failed_count,
+            total=len(subscriptions)
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error sending broadcast: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error sending broadcast: {str(e)}")
+
+
+@app.post("/admin/push/application/{app_id}", response_model=PushResponse)
+async def admin_push_to_application(
+    app_id: str,
+    payload: PushPayload,
+    current_admin: dict = Depends(get_current_admin)
+):
+    """Send push notification to all users of a specific application."""
+    try:
+        # Verify application exists
+        application = await Application.get(app_id)
+        if not application:
+            raise HTTPException(status_code=404, detail="Application not found")
+        
+        # Get all subscriptions for this application
+        subscriptions = await PushSubscription.find({"application_id": app_id}).to_list()
+        
+        if not subscriptions:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No subscriptions found for application: {application.name}"
+            )
+        
+        success_count = 0
+        failed_count = 0
+        
+        for subscription in subscriptions:
+            subscription_info = {
+                "endpoint": subscription.endpoint,
+                "keys": subscription.keys
+            }
+            
+            success = await send_push_notification(
+                subscription_info=subscription_info,
+                payload=payload.dict()
+            )
+            
+            if success:
+                success_count += 1
+            else:
+                failed_count += 1
+        
+        return PushResponse(
+            success=True,
+            message=f"Push notifications sent to application: {application.name}",
+            success_count=success_count,
+            failed_count=failed_count,
+            total=len(subscriptions)
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error sending push to application {app_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error sending push: {str(e)}")
+
+
+@app.post("/admin/push/users", response_model=PushResponse)
+async def admin_push_to_users(
+    request: PushToUsersRequest,
+    current_admin: dict = Depends(get_current_admin)
+):
+    """Send push notification to a list of users by user_id."""
+    try:
+        if not request.user_ids:
+            raise HTTPException(status_code=400, detail="user_ids list cannot be empty")
+        
+        # Find subscriptions for all user_ids
+        subscriptions = await PushSubscription.find(
+            {"user_id": {"$in": request.user_ids}}
+        ).to_list()
+        
+        if not subscriptions:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No subscriptions found for provided user_ids"
+            )
+        
+        # Create a map of user_id to subscription for quick lookup
+        subscription_map = {sub.user_id: sub for sub in subscriptions if sub.user_id}
+        
+        success_count = 0
+        failed_count = 0
+        not_found_count = 0
+        
+        for user_id in request.user_ids:
+            subscription = subscription_map.get(user_id)
+            
+            if not subscription:
+                not_found_count += 1
+                continue
+            
+            subscription_info = {
+                "endpoint": subscription.endpoint,
+                "keys": subscription.keys
+            }
+            
+            success = await send_push_notification(
+                subscription_info=subscription_info,
+                payload=request.payload.dict()
+            )
+            
+            if success:
+                success_count += 1
+            else:
+                failed_count += 1
+        
+        return PushResponse(
+            success=True,
+            message=f"Push notifications sent to {success_count} users",
+            success_count=success_count,
+            failed_count=failed_count,
+            total=len(request.user_ids)
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error sending push to users: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error sending push: {str(e)}")
 
 
 if __name__ == "__main__":
