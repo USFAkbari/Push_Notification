@@ -62,27 +62,71 @@
 
   // Subscribe to push notifications
   async function subscribe() {
-    if (!checkSupport() || !vapidPublicKey) {
-      message = 'Push notifications not supported or VAPID key not loaded';
+    if (!checkSupport()) {
+      message = 'Push notifications are not supported in this browser';
+      return;
+    }
+
+    if (!vapidPublicKey) {
+      message = 'VAPID key not loaded. Please refresh the page or check backend connection.';
+      console.error('VAPID key is null. Backend may not be responding.');
       return;
     }
 
     if (subscriptionStatus !== 'granted') {
       await requestPermission();
       if (subscriptionStatus !== 'granted') {
+        message = 'Notification permission is required to subscribe. Please grant permission first.';
         return;
       }
     }
 
     try {
       isLoading = true;
-      const registration = await navigator.serviceWorker.ready;
+      message = 'Registering service worker...';
       
-      const pushSubscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
-      });
+      // Wait for service worker to be ready
+      let registration;
+      try {
+        registration = await navigator.serviceWorker.ready;
+        console.log('Service worker ready:', registration);
+      } catch (error) {
+        console.error('Service worker not ready:', error);
+        message = 'Service worker not ready. Please refresh the page and try again.';
+        return;
+      }
 
+      message = 'Creating push subscription...';
+      
+      // Create push subscription
+      let pushSubscription;
+      try {
+        const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
+        console.log('VAPID key length:', vapidPublicKey.length);
+        console.log('Application server key array length:', applicationServerKey.length);
+        
+        pushSubscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: applicationServerKey
+        });
+        console.log('Push subscription created:', pushSubscription);
+      } catch (error) {
+        console.error('Push subscription error:', error);
+        if (error.name === 'NotAllowedError') {
+          message = 'Notification permission denied. Please enable notifications in browser settings.';
+        } else if (error.name === 'NotSupportedError') {
+          message = 'Push notifications not supported. Try a different browser.';
+        } else if (error.message?.includes('Invalid key')) {
+          message = 'Invalid VAPID key format. Please check backend configuration.';
+        } else {
+          message = `Failed to create push subscription: ${error.message || error.name || 'Unknown error'}`;
+        }
+        return;
+      }
+
+      message = 'Saving subscription to server...';
+      
+      // Prepare subscription data
       const subscriptionData = {
         endpoint: pushSubscription.endpoint,
         keys: {
@@ -91,15 +135,34 @@
         },
         user_id: userId || null
       };
+      console.log('Subscription data prepared:', {
+        endpoint: subscriptionData.endpoint,
+        user_id: subscriptionData.user_id,
+        has_keys: !!subscriptionData.keys.p256dh && !!subscriptionData.keys.auth
+      });
 
-      await axios.post('/subscribe', subscriptionData);
+      // Send to backend
+      try {
+        const response = await axios.post('/subscribe', subscriptionData);
+        console.log('Subscription saved to backend:', response.data);
+      } catch (error) {
+        console.error('Backend subscription error:', error);
+        if (error.response) {
+          message = `Backend error: ${error.response.data?.detail || error.response.statusText} (${error.response.status})`;
+        } else if (error.request) {
+          message = 'Cannot connect to backend. Check if backend is running.';
+        } else {
+          message = `Error saving subscription: ${error.message}`;
+        }
+        return;
+      }
       
       subscription = pushSubscription;
       subscriptionStatus = 'subscribed';
-      message = 'Successfully subscribed to push notifications';
+      message = 'Successfully subscribed to push notifications!';
     } catch (error) {
-      console.error('Error subscribing:', error);
-      message = 'Failed to subscribe to push notifications';
+      console.error('Unexpected error during subscription:', error);
+      message = `Failed to subscribe: ${error.message || 'Unknown error'}`;
     } finally {
       isLoading = false;
     }
@@ -205,18 +268,42 @@
   }
 
   // Utility: Convert VAPID key from base64 URL to Uint8Array
+  // VAPID keys are stored as 64 bytes (x + y coordinates)
+  // But PushManager.subscribe() requires 65 bytes (0x04 + x + y)
   function urlBase64ToUint8Array(base64String) {
+    if (!base64String) {
+      throw new Error('VAPID key is empty');
+    }
+
+    // Add padding if needed (base64 URL-safe doesn't use padding)
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
     const base64 = (base64String + padding)
       .replace(/\-/g, '+')
       .replace(/_/g, '/');
 
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-
-    for (let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.charCodeAt(i);
+    // Decode base64 to binary string
+    let rawData;
+    try {
+      rawData = window.atob(base64);
+    } catch (error) {
+      throw new Error(`Invalid base64 encoding: ${error.message}`);
     }
+
+    // VAPID public key should be 64 bytes (x + y coordinates)
+    // PushManager requires 65 bytes with 0x04 prefix (uncompressed point format)
+    if (rawData.length !== 64) {
+      throw new Error(`Invalid VAPID key length: expected 64 bytes, got ${rawData.length}`);
+    }
+
+    // Create Uint8Array with 65 bytes: 0x04 prefix + 64 bytes of key data
+    const outputArray = new Uint8Array(65);
+    outputArray[0] = 0x04; // Uncompressed point indicator
+    
+    // Copy the 64 bytes of key data
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i + 1] = rawData.charCodeAt(i);
+    }
+    
     return outputArray;
   }
 

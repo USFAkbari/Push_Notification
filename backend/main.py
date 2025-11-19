@@ -1,4 +1,5 @@
 """FastAPI application for Web Push Notification service."""
+import logging
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -7,6 +8,9 @@ from datetime import datetime
 from database import init_database
 from db_models import PushSubscription
 from push_service import send_push_notification, get_vapid_public_key
+from generate_vapid_keys import ensure_vapid_keys
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Web Push Notification Service")
 
@@ -39,7 +43,22 @@ class PushPayload(BaseModel):
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize database on startup."""
+    """Initialize database and ensure VAPID keys exist on startup."""
+    # Ensure VAPID keys exist before initializing database
+    logger.info("Checking VAPID keys...")
+    public_key, private_key, was_generated = ensure_vapid_keys(
+        write_to_file=True,
+        silent=False
+    )
+    
+    if not public_key or not private_key:
+        logger.error("Failed to ensure VAPID keys are available. Push notifications may not work.")
+    elif was_generated:
+        logger.warning("VAPID keys were auto-generated. Please verify they are correct for production use.")
+    else:
+        logger.info("VAPID keys are configured and valid.")
+    
+    # Initialize database
     from db_models import PushSubscription
     await init_database([PushSubscription])
 
@@ -48,6 +67,34 @@ async def startup_event():
 async def root():
     """Root endpoint."""
     return {"message": "Web Push Notification Service"}
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    try:
+        # Check database connection
+        from motor.motor_asyncio import AsyncIOMotorClient
+        from database import MONGODB_URI
+        client = AsyncIOMotorClient(MONGODB_URI)
+        await client.admin.command('ping')
+        client.close()
+        
+        # Check VAPID keys
+        public_key = get_vapid_public_key()
+        has_vapid_keys = bool(public_key)
+        
+        return {
+            "status": "healthy",
+            "database": "connected",
+            "vapid_keys_configured": has_vapid_keys
+        }
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return {
+            "status": "unhealthy",
+            "error": str(e)
+        }
 
 
 @app.get("/vapid-public-key")
@@ -63,17 +110,24 @@ async def get_vapid_public_key_endpoint():
 async def subscribe(subscription: SubscriptionData):
     """Store a new push subscription."""
     try:
+        logger.info(f"Received subscription request for endpoint: {subscription.endpoint[:50]}...")
+        logger.info(f"User ID: {subscription.user_id}")
+        logger.info(f"Has keys: p256dh={bool(subscription.keys.get('p256dh'))}, auth={bool(subscription.keys.get('auth'))}")
+        
         # Check if subscription already exists
         existing = await PushSubscription.find_one({"endpoint": subscription.endpoint})
         
         if existing:
             # Update existing subscription
+            logger.info(f"Updating existing subscription for endpoint: {subscription.endpoint[:50]}...")
             existing.keys = subscription.keys
             existing.user_id = subscription.user_id
             await existing.save()
+            logger.info(f"Subscription updated successfully for user_id: {subscription.user_id}")
             return {"success": True, "message": "Subscription updated"}
         
         # Create new subscription
+        logger.info("Creating new subscription...")
         push_sub = PushSubscription(
             endpoint=subscription.endpoint,
             keys=subscription.keys,
@@ -81,8 +135,10 @@ async def subscribe(subscription: SubscriptionData):
             created_at=datetime.utcnow()
         )
         await push_sub.insert()
+        logger.info(f"Subscription stored successfully for user_id: {subscription.user_id}")
         return {"success": True, "message": "Subscription stored"}
     except Exception as e:
+        logger.error(f"Error storing subscription: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error storing subscription: {str(e)}")
 
 
