@@ -1,4 +1,5 @@
 import App from './App.svelte';
+import Admin from './Admin.svelte';
 import axios from 'axios';
 
 // Configure Axios base URL
@@ -13,8 +14,8 @@ if (API_BASE_URL) {
   axios.defaults.baseURL = '';
 }
 
-// Register service worker
-if ('serviceWorker' in navigator) {
+// Register service worker (only for main app, not admin)
+if ('serviceWorker' in navigator && !window.location.pathname.startsWith('/admin')) {
   window.addEventListener('load', async () => {
     try {
       const registration = await navigator.serviceWorker.register('/service-worker.js');
@@ -25,10 +26,13 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// Initialize Svelte app
-const app = new App({
-  target: document.getElementById('app'),
-});
+// Simple routing: check if path starts with /admin
+const isAdmin = window.location.pathname.startsWith('/admin');
+
+// Initialize appropriate Svelte app
+const app = isAdmin 
+  ? new Admin({ target: document.getElementById('app') })
+  : new App({ target: document.getElementById('app') });
 
 export default app;
 

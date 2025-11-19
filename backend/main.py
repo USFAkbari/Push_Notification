@@ -1,14 +1,19 @@
 """FastAPI application for Web Push Notification service."""
 import logging
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 from datetime import datetime
 from database import init_database
-from db_models import PushSubscription
+from db_models import PushSubscription, Admin, Application
 from push_service import send_push_notification, get_vapid_public_key
 from generate_vapid_keys import ensure_vapid_keys
+from auth import (
+    verify_password, get_password_hash, create_access_token,
+    get_current_admin, verify_token
+)
+from app_secret import generate_application_secret, hash_application_secret
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +46,66 @@ class PushPayload(BaseModel):
     data: Optional[Dict] = None
 
 
+# Admin Pydantic models
+class AdminLogin(BaseModel):
+    """Admin login request model."""
+    username: str
+    password: str
+
+
+class AdminLoginResponse(BaseModel):
+    """Admin login response model."""
+    access_token: str
+    token_type: str = "bearer"
+
+
+class ApplicationCreate(BaseModel):
+    """Application creation request model."""
+    name: str
+    store_fingerprint: Optional[str] = None
+
+
+class ApplicationResponse(BaseModel):
+    """Application response model."""
+    id: str
+    name: str
+    store_fingerprint: Optional[str] = None
+    created_at: datetime
+
+
+class ApplicationCreateResponse(BaseModel):
+    """Application creation response model."""
+    id: str
+    name: str
+    secret: str  # Only returned on creation/reset
+    store_fingerprint: Optional[str] = None
+    created_at: datetime
+
+
+class ApplicationUpdate(BaseModel):
+    """Application update request model."""
+    name: Optional[str] = None
+    store_fingerprint: Optional[str] = None
+
+
+class UserResponse(BaseModel):
+    """User response model."""
+    id: str
+    user_id: Optional[str]
+    endpoint: str
+    application_id: Optional[str] = None
+    application_name: Optional[str] = None
+    created_at: datetime
+
+
+class UserListResponse(BaseModel):
+    """User list response model."""
+    users: List[UserResponse]
+    total: int
+    limit: int
+    offset: int
+
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize database and ensure VAPID keys exist on startup."""
@@ -59,8 +124,8 @@ async def startup_event():
         logger.info("VAPID keys are configured and valid.")
     
     # Initialize database
-    from db_models import PushSubscription
-    await init_database([PushSubscription])
+    from db_models import PushSubscription, Admin, Application
+    await init_database([PushSubscription, Admin, Application])
 
 
 @app.get("/")
@@ -214,6 +279,291 @@ async def push_broadcast(payload: PushPayload):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error sending broadcast: {str(e)}")
+
+
+# ==================== Admin Endpoints ====================
+
+@app.post("/admin/login", response_model=AdminLoginResponse)
+async def admin_login(login_data: AdminLogin):
+    """Admin login endpoint with JWT token generation."""
+    try:
+        # Find admin by username
+        admin = await Admin.find_one({"username": login_data.username})
+        
+        if not admin:
+            raise HTTPException(
+                status_code=401,
+                detail="Incorrect username or password"
+            )
+        
+        # Verify password
+        if not verify_password(login_data.password, admin.password_hash):
+            raise HTTPException(
+                status_code=401,
+                detail="Incorrect username or password"
+            )
+        
+        # Create access token
+        access_token = create_access_token(data={"sub": admin.username})
+        
+        return AdminLoginResponse(access_token=access_token)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error during admin login: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error during login: {str(e)}")
+
+
+@app.post("/admin/applications", response_model=ApplicationCreateResponse)
+async def create_application(
+    app_data: ApplicationCreate,
+    current_admin: dict = Depends(get_current_admin)
+):
+    """Create a new application with generated secret."""
+    try:
+        # Check if application name already exists
+        existing = await Application.find_one({"name": app_data.name})
+        if existing:
+            raise HTTPException(
+                status_code=400,
+                detail="Application with this name already exists"
+            )
+        
+        # Generate and hash application secret
+        secret = generate_application_secret()
+        secret_hash = hash_application_secret(secret)
+        
+        # Create application
+        application = Application(
+            name=app_data.name,
+            secret_hash=secret_hash,
+            store_fingerprint=app_data.store_fingerprint,
+            created_at=datetime.utcnow()
+        )
+        await application.insert()
+        
+        return ApplicationCreateResponse(
+            id=str(application.id),
+            name=application.name,
+            secret=secret,  # Return plain secret only on creation
+            store_fingerprint=application.store_fingerprint,
+            created_at=application.created_at
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating application: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error creating application: {str(e)}")
+
+
+@app.get("/admin/applications", response_model=List[ApplicationResponse])
+async def list_applications(current_admin: dict = Depends(get_current_admin)):
+    """List all applications."""
+    try:
+        applications = await Application.find_all().to_list()
+        return [
+            ApplicationResponse(
+                id=str(app.id),
+                name=app.name,
+                store_fingerprint=app.store_fingerprint,
+                created_at=app.created_at
+            )
+            for app in applications
+        ]
+    except Exception as e:
+        logger.error(f"Error listing applications: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error listing applications: {str(e)}")
+
+
+@app.get("/admin/applications/{app_id}", response_model=ApplicationResponse)
+async def get_application(
+    app_id: str,
+    current_admin: dict = Depends(get_current_admin)
+):
+    """Get a single application by ID."""
+    try:
+        application = await Application.get(app_id)
+        if not application:
+            raise HTTPException(status_code=404, detail="Application not found")
+        
+        return ApplicationResponse(
+            id=str(application.id),
+            name=application.name,
+            store_fingerprint=application.store_fingerprint,
+            created_at=application.created_at
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting application: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error getting application: {str(e)}")
+
+
+@app.put("/admin/applications/{app_id}", response_model=ApplicationResponse)
+async def update_application(
+    app_id: str,
+    app_data: ApplicationUpdate,
+    current_admin: dict = Depends(get_current_admin)
+):
+    """Update an application."""
+    try:
+        application = await Application.get(app_id)
+        if not application:
+            raise HTTPException(status_code=404, detail="Application not found")
+        
+        # Update fields if provided
+        if app_data.name is not None:
+            # Check if new name conflicts with existing application
+            existing = await Application.find_one({"name": app_data.name})
+            if existing and str(existing.id) != app_id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Application with this name already exists"
+                )
+            application.name = app_data.name
+        
+        if app_data.store_fingerprint is not None:
+            application.store_fingerprint = app_data.store_fingerprint
+        
+        await application.save()
+        
+        return ApplicationResponse(
+            id=str(application.id),
+            name=application.name,
+            store_fingerprint=application.store_fingerprint,
+            created_at=application.created_at
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating application: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error updating application: {str(e)}")
+
+
+@app.post("/admin/applications/{app_id}/reset-secret", response_model=ApplicationCreateResponse)
+async def reset_application_secret(
+    app_id: str,
+    current_admin: dict = Depends(get_current_admin)
+):
+    """Reset application secret and return new secret."""
+    try:
+        application = await Application.get(app_id)
+        if not application:
+            raise HTTPException(status_code=404, detail="Application not found")
+        
+        # Generate new secret and hash
+        secret = generate_application_secret()
+        secret_hash = hash_application_secret(secret)
+        
+        # Update application
+        application.secret_hash = secret_hash
+        await application.save()
+        
+        return ApplicationCreateResponse(
+            id=str(application.id),
+            name=application.name,
+            secret=secret,  # Return plain secret only on reset
+            store_fingerprint=application.store_fingerprint,
+            created_at=application.created_at
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error resetting application secret: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error resetting secret: {str(e)}")
+
+
+@app.get("/admin/users", response_model=UserListResponse)
+async def list_users(
+    limit: int = Query(10, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    application_name: Optional[str] = Query(None),
+    current_admin: dict = Depends(get_current_admin)
+):
+    """List all users with pagination and optional filtering by application name."""
+    try:
+        # Build filter
+        filter_dict = {}
+        
+        # Filter by application name if provided
+        if application_name:
+            application = await Application.find_one({"name": application_name})
+            if not application:
+                # Return empty result if application not found
+                return UserListResponse(
+                    users=[],
+                    total=0,
+                    limit=limit,
+                    offset=offset
+                )
+            filter_dict["application_id"] = str(application.id)
+        
+        # Get total count
+        total = await PushSubscription.find(filter_dict).count()
+        
+        # Get paginated subscriptions
+        subscriptions = await PushSubscription.find(filter_dict).skip(offset).limit(limit).to_list()
+        
+        # Get application names for each subscription
+        user_responses = []
+        for sub in subscriptions:
+            application_name_value = None
+            if sub.application_id:
+                app = await Application.get(sub.application_id)
+                if app:
+                    application_name_value = app.name
+            
+            user_responses.append(UserResponse(
+                id=str(sub.id),
+                user_id=sub.user_id,
+                endpoint=sub.endpoint,
+                application_id=sub.application_id,
+                application_name=application_name_value,
+                created_at=sub.created_at
+            ))
+        
+        return UserListResponse(
+            users=user_responses,
+            total=total,
+            limit=limit,
+            offset=offset
+        )
+    except Exception as e:
+        logger.error(f"Error listing users: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error listing users: {str(e)}")
+
+
+@app.get("/admin/users/{user_id}", response_model=UserResponse)
+async def get_user(
+    user_id: str,
+    current_admin: dict = Depends(get_current_admin)
+):
+    """Get detailed information for a specific user."""
+    try:
+        subscription = await PushSubscription.get(user_id)
+        if not subscription:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Get application name if linked
+        application_name = None
+        if subscription.application_id:
+            app = await Application.get(subscription.application_id)
+            if app:
+                application_name = app.name
+        
+        return UserResponse(
+            id=str(subscription.id),
+            user_id=subscription.user_id,
+            endpoint=subscription.endpoint,
+            application_id=subscription.application_id,
+            application_name=application_name,
+            created_at=subscription.created_at
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting user: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error getting user: {str(e)}")
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017/push_db")
+MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://127.0.0.1:27017/push_db")
 DATABASE_NAME = os.getenv("DATABASE_NAME", "push_db")
 
 
@@ -14,6 +14,11 @@ async def init_database(document_models=None):
     """Initialize MongoDB connection and Beanie ODM."""
     if document_models is None:
         document_models = []
-    client = AsyncIOMotorClient(MONGODB_URI)
+    # Add connection timeout parameters
+    client = AsyncIOMotorClient(
+        MONGODB_URI,
+        serverSelectionTimeoutMS=10000,  # 10 seconds
+        connectTimeoutMS=10000
+    )
     await init_beanie(database=client[DATABASE_NAME], document_models=document_models)
 
