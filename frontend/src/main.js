@@ -3,15 +3,15 @@ import Admin from './Admin.svelte';
 import axios from 'axios';
 
 // Configure Axios base URL
-// In Docker: use relative paths (nginx will proxy to backend)
-// In development: use explicit backend URL
+// In Docker: use relative paths with /api-v1 prefix (nginx will proxy to backend)
+// In development: use explicit backend URL with /api-v1 prefix
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 if (API_BASE_URL) {
   axios.defaults.baseURL = API_BASE_URL;
 } else {
-  // Default: use relative paths (works with nginx proxy in Docker)
-  // For local development, set VITE_API_BASE_URL=http://localhost:8000
-  axios.defaults.baseURL = '';
+  // Default: use /api-v1 prefix (works with nginx proxy in Docker)
+  // For local development, set VITE_API_BASE_URL=http://localhost:8000/api-v1
+  axios.defaults.baseURL = '/api-v1';
 }
 
 // Register service worker (only for main app at /app route)

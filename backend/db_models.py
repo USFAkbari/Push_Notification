@@ -1,6 +1,6 @@
 """Database models for push subscription storage."""
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from beanie import Document
 from pydantic import Field
 
@@ -10,6 +10,8 @@ class Admin(Document):
     
     username: str = Field(..., unique=True)
     password_hash: str  # Hashed password using bcrypt
+    is_super_admin: bool = False  # Super admin has access to all applications
+    application_ids: List[str] = []  # List of application IDs this admin can access
     created_at: datetime = datetime.utcnow()
     
     class Settings:

@@ -1,4 +1,4 @@
-"""Authentication utilities for admin access."""
+"""Authentication utilities for user access."""
 import os
 import secrets
 from datetime import datetime, timedelta
@@ -51,29 +51,9 @@ def verify_token(token: str) -> Optional[dict]:
         return None
 
 
-async def get_current_admin(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
-    """Dependency to get current authenticated admin from JWT token."""
-    token = credentials.credentials
-    payload = verify_token(token)
-    if payload is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    username: str = payload.get("sub")
-    if username is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return {"username": username}
-
-
-async def get_current_admin_with_permissions(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Dependency to get current authenticated admin with full permissions from database."""
-    from db_models import Admin
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Dependency to get current authenticated user from JWT token."""
+    from models import User
     
     token = credentials.credentials
     payload = verify_token(token)
@@ -83,40 +63,22 @@ async def get_current_admin_with_permissions(credentials: HTTPAuthorizationCrede
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    username: str = payload.get("sub")
-    if username is None:
+    user_id: str = payload.get("sub")
+    if user_id is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Get admin from database
-    admin = await Admin.find_one({"username": username})
-    if not admin:
+    # Get user from database
+    user = await User.get(user_id)
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Admin not found",
+            detail="User not found",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    return admin
-
-
-async def check_application_access(application_id: str, admin):
-    """Check if admin has access to a specific application."""
-    from fastapi import HTTPException, status
-    
-    # Super admin has access to all applications
-    if admin.is_super_admin:
-        return admin
-    
-    # Check if application_id is in admin's allowed applications
-    if application_id not in admin.application_ids:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have permission to access this application"
-        )
-    
-    return admin
+    return user
 

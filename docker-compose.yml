@@ -1,18 +1,42 @@
 services:
+  mongodb:
+    image: mongo:latest
+    container_name: push-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: push_db
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - push-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: shamim_push_back
+    container_name: push-backend
     restart: unless-stopped
+    ports:
+      - "8000:8000"
     environment:
-      - MONGODB_URI=mongodb://root:ea029108iideroq4c0f9a982a489f606b76@mongo_db:27017/push_db?authSource=admin
+      - MONGODB_URI=mongodb://mongodb:27017/push_db
+      - DATABASE_NAME=push_db
       - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
       - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-}
       - VAPID_EMAIL=${VAPID_EMAIL:-mailto:example@example.com}
+    depends_on:
+      mongodb:
+        condition: service_healthy
     networks:
-      - shamim_network
-      - mongo_network
+      - push-network
     volumes:
       - ./backend:/app
     healthcheck:
@@ -26,14 +50,16 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: shamim_push_front
+    container_name: push-frontend
     restart: unless-stopped
+    ports:
+      - "3000:80"
     environment:
-      - VITE_API_BASE_URL=https://push.shamim313.com
+      - VITE_API_BASE_URL=http://localhost:8000
     depends_on:
       - backend
     networks:
-      - shamim_network
+      - push-network
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
       interval: 30s
@@ -42,8 +68,10 @@ services:
       start_period: 5s
 
 networks:
-  shamim_network:
-    external: true
-  mongo_network:
-    external: true
+  push-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+    driver: local
 
