@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from typing import Optional, Dict, List
 from datetime import datetime
 from database import init_database
-from db_models import PushSubscription, Admin, Application
+from db_models import PushSubscription, Admin, Application, User
 from push_service import send_push_notification, get_vapid_public_key
 from generate_vapid_keys import ensure_vapid_keys
 from auth import (
@@ -133,6 +133,28 @@ class UserListResponse(BaseModel):
     offset: int
 
 
+class AllUserResponse(BaseModel):
+    """All users response model with subscription status."""
+    id: str
+    user_id: str
+    username: Optional[str] = None
+    email: Optional[str] = None
+    has_subscription: bool = False
+    subscription_id: Optional[str] = None
+    endpoint: Optional[str] = None
+    application_id: Optional[str] = None
+    application_name: Optional[str] = None
+    created_at: datetime
+
+
+class AllUserListResponse(BaseModel):
+    """All users list response model."""
+    users: List[AllUserResponse]
+    total: int
+    limit: int
+    offset: int
+
+
 class PushToUsersRequest(BaseModel):
     """Push notification request for list of users."""
     user_ids: List[str]
@@ -209,8 +231,8 @@ async def startup_event():
         logger.info("VAPID keys are configured and valid.")
     
     # Initialize database
-    from db_models import PushSubscription, Admin, Application
-    await init_database([PushSubscription, Admin, Application])
+    from db_models import PushSubscription, Admin, Application, User
+    await init_database([PushSubscription, Admin, Application, User])
     
     # Check if any admin exists, if not create default admin
     admin_count = await Admin.find({}).count()
@@ -818,6 +840,150 @@ async def list_users(
     except Exception as e:
         logger.error(f"Error listing users: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error listing users: {str(e)}")
+
+
+@api_router.get("/admin/users/all", response_model=AllUserListResponse)
+async def get_all_users(
+    limit: int = Query(10, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    application_id: Optional[str] = Query(None),
+    include_without_subscription: bool = Query(True),
+    current_admin = Depends(get_current_admin_with_permissions)
+):
+    """Get all users from users collection and their subscription status. Regular admins only see users from their assigned applications."""
+    try:
+        # Build filter for subscriptions
+        subscription_filter = {}
+        
+        # Filter by application_id if provided
+        if application_id:
+            # Check if admin has access to this application
+            if not current_admin.is_super_admin:
+                if application_id not in current_admin.application_ids:
+                    return AllUserListResponse(
+                        users=[],
+                        total=0,
+                        limit=limit,
+                        offset=offset
+                    )
+            subscription_filter["application_id"] = application_id
+        
+        # Filter by admin permissions (if not super admin)
+        if not current_admin.is_super_admin:
+            if current_admin.application_ids:
+                if "application_id" in subscription_filter:
+                    # Already filtered by specific application
+                    pass
+                else:
+                    subscription_filter["application_id"] = {"$in": current_admin.application_ids}
+            else:
+                # Admin has no assigned applications, only return users without subscriptions if allowed
+                if not include_without_subscription:
+                    return AllUserListResponse(
+                        users=[],
+                        total=0,
+                        limit=limit,
+                        offset=offset
+                    )
+        
+        # Get all subscriptions matching filter
+        subscriptions = await PushSubscription.find(subscription_filter).to_list()
+        
+        # Create a map of user_id to subscription for quick lookup
+        subscription_map = {}
+        for sub in subscriptions:
+            if sub.user_id:
+                subscription_map[sub.user_id] = sub
+        
+        # Get all users from users collection
+        users_query = {}
+        if not current_admin.is_super_admin and application_id:
+            # If filtering by application, we need to check which users have subscriptions for that app
+            user_ids_with_subscription = [sub.user_id for sub in subscriptions if sub.user_id]
+            if not include_without_subscription and not user_ids_with_subscription:
+                return AllUserListResponse(
+                    users=[],
+                    total=0,
+                    limit=limit,
+                    offset=offset
+                )
+        
+        # Get total count of users
+        total_users = await User.find(users_query).count()
+        
+        # Get paginated users
+        users = await User.find(users_query).skip(offset).limit(limit).to_list()
+        
+        # Get application names
+        application_names = {}
+        if application_id:
+            app = await Application.get(application_id)
+            if app:
+                application_names[application_id] = app.name
+        else:
+            # Get all application names for subscriptions
+            app_ids = set()
+            for sub in subscriptions:
+                if sub.application_id:
+                    app_ids.add(sub.application_id)
+            for app_id in app_ids:
+                app = await Application.get(app_id)
+                if app:
+                    application_names[app_id] = app.name
+        
+        # Merge users with subscription data
+        all_user_responses = []
+        for user in users:
+            user_id_str = str(user.id)
+            subscription = subscription_map.get(user_id_str)
+            
+            # Check if user's subscription is in allowed applications
+            if subscription and subscription.application_id:
+                if not current_admin.is_super_admin:
+                    if subscription.application_id not in current_admin.application_ids:
+                        # Skip this user if admin doesn't have access to their application
+                        continue
+            elif subscription:
+                # User has subscription but no application_id - skip if not super admin
+                if not current_admin.is_super_admin:
+                    continue
+            
+            # Skip users without subscriptions if not including them
+            if not include_without_subscription and not subscription:
+                continue
+            
+            application_name = None
+            if subscription and subscription.application_id:
+                application_name = application_names.get(subscription.application_id)
+            
+            all_user_responses.append(AllUserResponse(
+                id=user_id_str,
+                user_id=user_id_str,
+                username=user.username,
+                email=user.email,
+                has_subscription=subscription is not None,
+                subscription_id=str(subscription.id) if subscription else None,
+                endpoint=subscription.endpoint if subscription else None,
+                application_id=subscription.application_id if subscription else None,
+                application_name=application_name,
+                created_at=user.created_at
+            ))
+        
+        # Filter total count if needed
+        if not include_without_subscription:
+            total = len(all_user_responses)
+        else:
+            total = total_users
+        
+        return AllUserListResponse(
+            users=all_user_responses,
+            total=total,
+            limit=limit,
+            offset=offset
+        )
+    except Exception as e:
+        logger.error(f"Error getting all users: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error getting all users: {str(e)}")
 
 
 @api_router.get("/admin/users/{user_id}", response_model=UserResponse)

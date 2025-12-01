@@ -1,15 +1,15 @@
+version: '3.8'
+
 services:
   # ============================================================================
   # MongoDB Service - Shared database for all applications
   # ============================================================================
   mongodb:
     image: mongo:latest
-    container_name: push-notification-mongodb
     ports:
       - "27017:27017"
     environment:
       MONGO_INITDB_DATABASE: push_db
-      # Both services now use the same database (push_db)
     volumes:
       - mongodb_data:/data/db
     networks:
@@ -20,8 +20,15 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-    restart: unless-stopped
     deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      placement:
+        constraints:
+          - node.role == manager
       resources:
         limits:
           cpus: '1'
@@ -29,6 +36,9 @@ services:
         reservations:
           cpus: '0.5'
           memory: 1G
+      labels:
+        - "com.docker.stack.namespace=push-notification"
+        - "service.type=database"
 
   # ============================================================================
   # Push Notification Backend Service
@@ -37,7 +47,6 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: push-notification-backend
     ports:
       - "8000:8000"
     environment:
@@ -59,8 +68,24 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-    restart: unless-stopped
     deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        monitor: 30s
+        order: start-first
+      rollback_config:
+        parallelism: 1
+        delay: 5s
+        failure_action: pause
+        monitor: 30s
+        order: stop-first
       resources:
         limits:
           cpus: '1'
@@ -68,6 +93,10 @@ services:
         reservations:
           cpus: '0.25'
           memory: 512M
+      labels:
+        - "com.docker.stack.namespace=push-notification"
+        - "service.type=backend"
+        - "service.name=push-backend"
 
   # ============================================================================
   # Push Notification Frontend Service
@@ -76,7 +105,6 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: push-notification-frontend
     ports:
       - "3000:80"
     environment:
@@ -91,8 +119,24 @@ services:
       timeout: 3s
       retries: 3
       start_period: 5s
-    restart: unless-stopped
     deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        monitor: 30s
+        order: start-first
+      rollback_config:
+        parallelism: 1
+        delay: 5s
+        failure_action: pause
+        monitor: 30s
+        order: stop-first
       resources:
         limits:
           cpus: '0.5'
@@ -100,6 +144,10 @@ services:
         reservations:
           cpus: '0.1'
           memory: 128M
+      labels:
+        - "com.docker.stack.namespace=push-notification"
+        - "service.type=frontend"
+        - "service.name=push-frontend"
 
   # ============================================================================
   # User Registration Backend Service
@@ -108,7 +156,6 @@ services:
     build:
       context: ./test_Web_Aplication/backend
       dockerfile: Dockerfile
-    container_name: user-registration-backend
     ports:
       - "8001:8000"
     environment:
@@ -134,8 +181,24 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-    restart: unless-stopped
     deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        monitor: 30s
+        order: start-first
+      rollback_config:
+        parallelism: 1
+        delay: 5s
+        failure_action: pause
+        monitor: 30s
+        order: stop-first
       resources:
         limits:
           cpus: '1'
@@ -143,6 +206,10 @@ services:
         reservations:
           cpus: '0.25'
           memory: 512M
+      labels:
+        - "com.docker.stack.namespace=push-notification"
+        - "service.type=backend"
+        - "service.name=user-registration-backend"
 
   # ============================================================================
   # User Registration Frontend Service
@@ -151,7 +218,6 @@ services:
     build:
       context: ./test_Web_Aplication/frontend
       dockerfile: Dockerfile
-    container_name: user-registration-frontend
     ports:
       - "3001:80"
     environment:
@@ -167,8 +233,24 @@ services:
       timeout: 3s
       retries: 3
       start_period: 5s
-    restart: unless-stopped
     deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        monitor: 30s
+        order: start-first
+      rollback_config:
+        parallelism: 1
+        delay: 5s
+        failure_action: pause
+        monitor: 30s
+        order: stop-first
       resources:
         limits:
           cpus: '0.5'
@@ -176,21 +258,30 @@ services:
         reservations:
           cpus: '0.1'
           memory: 128M
+      labels:
+        - "com.docker.stack.namespace=push-notification"
+        - "service.type=frontend"
+        - "service.name=user-registration-frontend"
 
 # ============================================================================
 # Networks Configuration
 # ============================================================================
 networks:
-  # Bridge network for regular Docker Compose - enables service discovery
+  # Overlay network for Swarm mode - enables service discovery across nodes
   app-network:
-    driver: bridge
-    name: push-notification-network
+    driver: overlay
+    attachable: true
+    ipam:
+      config:
+        - subnet: 10.20.0.0/24
 
 # ============================================================================
 # Volumes Configuration
 # ============================================================================
 volumes:
   # Persistent storage for MongoDB data
+  # Note: In Swarm mode, volumes are managed by Docker and stored on the node
+  # where the service is running. For production, consider using named volumes
+  # or external volume drivers for better data persistence across nodes.
   mongodb_data:
     driver: local
-    name: push-notification-mongodb-data

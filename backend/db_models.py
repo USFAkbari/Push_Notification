@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import Optional, List
 from beanie import Document
-from pydantic import Field
+from pydantic import Field, EmailStr
 
 
 class Admin(Document):
@@ -44,4 +44,17 @@ class PushSubscription(Document):
     class Settings:
         name = "push_subscriptions"
         indexes = ["endpoint", "user_id", "application_id"]
+
+
+class User(Document):
+    """User model from User Registration App - for unified access."""
+    
+    username: str = Field(..., unique=True)
+    email: EmailStr = Field(..., unique=True)
+    password_hash: str  # Hashed password using bcrypt
+    created_at: datetime = datetime.utcnow()
+    
+    class Settings:
+        name = "users"
+        indexes = ["username", "email"]
 
