@@ -12,40 +12,103 @@
   let message = '';
   let messageType = 'info';
   let autoSubscribing = false;
+  let supportErrorType = null; // 'browser', 'https', 'incognito'
+  
+  // Detect Incognito/Private mode
+  async function detectIncognitoMode() {
+    try {
+      // Method 1: Check storage quota (works in Chrome/Edge)
+      if ('storage' in navigator && 'estimate' in navigator.storage) {
+        const estimate = await navigator.storage.estimate();
+        // In Incognito mode, quota is typically very limited (around 120MB)
+        if (estimate.quota && estimate.quota < 120000000) {
+          return true;
+        }
+      }
+      
+      // Method 2: Try to write to localStorage (works in some browsers)
+      try {
+        localStorage.setItem('__incognito_test__', 'test');
+        localStorage.removeItem('__incognito_test__');
+      } catch (e) {
+        // If we can't write to localStorage, might be Incognito
+        return true;
+      }
+      
+      // Method 3: Check for service worker limitations in Incognito
+      // Service workers are disabled in Incognito mode in some browsers
+      if ('serviceWorker' in navigator) {
+        try {
+          const registration = await navigator.serviceWorker.getRegistration();
+          // If we can't get registration and it's not a secure context issue, might be Incognito
+        } catch (e) {
+          // Could be Incognito, but also could be other issues
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.warn('Could not detect Incognito mode:', error);
+      return false;
+    }
+  }
   
   // Check if push notifications are supported
-  function checkSupport() {
+  async function checkSupport() {
     // Check for service worker support
     if (!('serviceWorker' in navigator)) {
       subscriptionStatus = 'not-supported';
+      supportErrorType = 'browser';
       console.warn('Service Worker is not supported in this browser');
+      message = 'Service Worker is not supported in this browser. Please use a modern browser.';
+      messageType = 'error';
       return false;
     }
     
     // Check for Push Manager support
     if (!('PushManager' in window)) {
       subscriptionStatus = 'not-supported';
+      supportErrorType = 'browser';
       console.warn('Push Manager is not supported in this browser');
+      message = 'Push Manager is not supported in this browser. Please use a modern browser.';
+      messageType = 'error';
       return false;
     }
     
     // Check for Notification API support
     if (!('Notification' in window)) {
       subscriptionStatus = 'not-supported';
+      supportErrorType = 'browser';
       console.warn('Notifications API is not supported in this browser');
+      message = 'Notifications API is not supported in this browser. Please use a modern browser.';
+      messageType = 'error';
       return false;
     }
     
     // Check if we're on HTTPS or localhost (required for push notifications)
+    // Allow 0.0.0.0 for development
     const isSecureContext = window.isSecureContext || 
                             location.protocol === 'https:' || 
                             location.hostname === 'localhost' || 
-                            location.hostname === '127.0.0.1';
+                            location.hostname === '127.0.0.1' ||
+                            location.hostname === '0.0.0.0';
     
     if (!isSecureContext) {
       subscriptionStatus = 'not-supported';
+      supportErrorType = 'https';
       console.warn('Push notifications require HTTPS or localhost');
-      message = 'Push notifications require HTTPS. Please access this site over HTTPS.';
+      message = 'Push notifications require HTTPS or localhost. Please access this site using localhost:3001 instead of 0.0.0.0:3001, or use HTTPS.';
+      messageType = 'error';
+      return false;
+    }
+    
+    // Check for Incognito mode
+    const isIncognito = await detectIncognitoMode();
+    if (isIncognito) {
+      subscriptionStatus = 'not-supported';
+      supportErrorType = 'incognito';
+      console.warn('Push notifications are not available in Incognito/Private mode');
+      message = 'Push notifications are not available in Incognito/Private browsing mode. Please use a regular browser window.';
       messageType = 'error';
       return false;
     }
@@ -68,9 +131,9 @@
   
   // Request notification permission
   async function requestPermission() {
-    if (!checkSupport()) {
-      message = 'Push notifications are not supported in this browser';
-      messageType = 'error';
+    const isSupported = await checkSupport();
+    if (!isSupported) {
+      // Error message already set by checkSupport()
       return false;
     }
     
@@ -101,10 +164,11 @@
   
   // Subscribe to push notifications
   async function subscribe(silent = false) {
-    if (!checkSupport()) {
-      if (!silent) {
-        message = 'Push notifications are not supported in this browser';
-        messageType = 'error';
+    const isSupported = await checkSupport();
+    if (!isSupported) {
+      // Error message already set by checkSupport()
+      if (silent) {
+        message = '';
       }
       return false;
     }
@@ -250,7 +314,8 @@
   
   // Check existing subscription
   async function checkExistingSubscription() {
-    if (!checkSupport()) {
+    const isSupported = await checkSupport();
+    if (!isSupported) {
       return false;
     }
     
@@ -339,7 +404,7 @@
     }
     
     // Initialize push notifications
-    checkSupport();
+    await checkSupport();
     await fetchVapidPublicKey();
     
     // Check existing subscription first
@@ -391,35 +456,109 @@
       <!-- Push Notification Subscription -->
       <div class="card bg-base-100 shadow-xl mb-4">
         <div class="card-body">
-          <h2 class="card-title">Push Notifications</h2>
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="card-title">Push Notifications</h2>
+            {#if subscriptionStatus === 'subscribed'}
+              <div class="badge badge-success badge-lg">Subscribed</div>
+            {:else if subscriptionStatus === 'granted'}
+              <div class="badge badge-warning badge-lg">Permission Granted</div>
+            {:else if subscriptionStatus === 'denied'}
+              <div class="badge badge-error badge-lg">Permission Denied</div>
+            {:else if subscriptionStatus === 'not-supported'}
+              <div class="badge badge-error badge-lg">Not Supported</div>
+            {:else}
+              <div class="badge badge-info badge-lg">Not Subscribed</div>
+            {/if}
+          </div>
           
           {#if subscriptionStatus === 'not-supported'}
-            <div class="alert alert-error">
-              <span>Push notifications are not supported in this browser</span>
+            <div class="alert alert-error mb-4">
+              <div class="flex flex-col gap-2">
+                <span class="font-bold">Push notifications are not available:</span>
+                {#if supportErrorType === 'incognito'}
+                  <div class="ml-4">
+                    <p class="mb-2">• You are using Incognito/Private browsing mode</p>
+                    <p class="text-sm opacity-90">Solution: Please exit Incognito mode and use a regular browser window. Push notifications require a regular browsing session.</p>
+                  </div>
+                {:else if supportErrorType === 'https'}
+                  <div class="ml-4">
+                    <p class="mb-2">• Connection is not secure (HTTP instead of HTTPS)</p>
+                    <p class="text-sm opacity-90">Solution: Access the site using <code class="bg-base-300 px-1 rounded">localhost:3001</code> instead of <code class="bg-base-300 px-1 rounded">0.0.0.0:3001</code>, or use HTTPS in production.</p>
+                  </div>
+                {:else if supportErrorType === 'browser'}
+                  <div class="ml-4">
+                    <p class="mb-2">• Browser does not support required features</p>
+                    <p class="text-sm opacity-90">Solution: Please use a modern browser like Chrome, Firefox, Edge, or Safari with the latest version.</p>
+                  </div>
+                {:else}
+                  <div class="ml-4">
+                    <p class="mb-2">• Push notifications are not supported in this environment</p>
+                    <p class="text-sm opacity-90">Please ensure you're using a modern browser, accessing via localhost or HTTPS, and not in Incognito mode.</p>
+                  </div>
+                {/if}
+              </div>
             </div>
           {:else}
-            <div class="mb-4">
-              <div class="badge badge-lg {subscriptionStatus === 'subscribed' ? 'badge-success' : subscriptionStatus === 'granted' ? 'badge-warning' : subscriptionStatus === 'denied' ? 'badge-error' : 'badge-info'}">
-                {subscriptionStatus === 'subscribed' ? 'Subscribed' : subscriptionStatus === 'granted' ? 'Permission Granted' : subscriptionStatus === 'denied' ? 'Permission Denied' : 'Setting up...'}
-              </div>
-            </div>
-            
             {#if isLoading && autoSubscribing}
-              <div class="alert alert-info">
+              <div class="alert alert-info mb-4">
                 <span class="loading loading-spinner loading-sm"></span>
-                <span class="ml-2">Setting up push notifications...</span>
+                <span class="ml-2">Setting up push notifications automatically...</span>
               </div>
             {:else if subscriptionStatus === 'subscribed'}
-              <div class="alert alert-success">
+              <div class="alert alert-success mb-4">
                 <span>✓ You are subscribed to push notifications! You will receive notifications sent by administrators.</span>
               </div>
             {:else if subscriptionStatus === 'denied'}
-              <div class="alert alert-error">
+              <div class="alert alert-error mb-4">
                 <span>Notification permission was denied. Please enable notifications in your browser settings to receive push notifications.</span>
               </div>
             {:else if subscriptionStatus === 'default'}
-              <div class="alert alert-warning">
-                <span>Notification permission is required. Please allow notifications when prompted.</span>
+              <div class="alert alert-warning mb-4">
+                <span>Notification permission is required. Click the Subscribe button below to enable push notifications.</span>
+              </div>
+            {:else if subscriptionStatus === 'granted'}
+              <div class="alert alert-info mb-4">
+                <span>Permission granted. Click Subscribe to complete the subscription process.</span>
+              </div>
+            {/if}
+            
+            <!-- Subscribe Button - Always visible when supported and not loading -->
+            {#if subscriptionStatus !== 'not-supported'}
+              <div class="flex gap-2">
+                {#if subscriptionStatus === 'subscribed'}
+                  <button 
+                    class="btn btn-primary btn-lg flex-1" 
+                    on:click={() => subscribe(false)}
+                    disabled={isLoading}
+                    title="Re-subscribe to push notifications"
+                  >
+                    {#if isLoading}
+                      <span class="loading loading-spinner loading-sm"></span>
+                      Subscribing...
+                    {:else}
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                      </svg>
+                      Re-subscribe
+                    {/if}
+                  </button>
+                {:else}
+                  <button 
+                    class="btn btn-primary btn-lg flex-1" 
+                    on:click={() => subscribe(false)}
+                    disabled={isLoading}
+                  >
+                    {#if isLoading}
+                      <span class="loading loading-spinner loading-sm"></span>
+                      Subscribing...
+                    {:else}
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                      </svg>
+                      Subscribe to Push Notifications
+                    {/if}
+                  </button>
+                {/if}
               </div>
             {/if}
           {/if}

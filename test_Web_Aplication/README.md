@@ -162,10 +162,59 @@ docker-compose down
 docker-compose up -d --build
 ```
 
+## Troubleshooting
+
+### Push Notifications Not Working
+
+If push notifications are not working, check the following:
+
+#### 1. **Use localhost instead of 0.0.0.0**
+   - **Problem**: Accessing the site via `0.0.0.0:3001` may not be recognized as a secure context
+   - **Solution**: Use `localhost:3001` or `127.0.0.1:3001` instead
+   - **Why**: Push notifications require HTTPS or localhost/127.0.0.1 for security
+
+#### 2. **Don't use Incognito/Private Mode**
+   - **Problem**: Push notifications are blocked in Incognito/Private browsing mode
+   - **Solution**: Exit Incognito mode and use a regular browser window
+   - **Why**: Service workers and push notifications are disabled in private browsing for privacy
+
+#### 3. **Use HTTPS in Production**
+   - **Problem**: Push notifications require a secure context
+   - **Solution**: Deploy with HTTPS enabled
+   - **Why**: Browsers require secure connections for push notifications
+
+#### 4. **Browser Compatibility**
+   - **Problem**: Older browsers may not support push notifications
+   - **Solution**: Use a modern browser (Chrome, Firefox, Edge, Safari - latest versions)
+   - **Why**: Push notifications require Service Workers, Push API, and Notification API
+
+#### 5. **Check Browser Permissions**
+   - **Problem**: Notification permission might be denied
+   - **Solution**: 
+     - Check browser settings for notification permissions
+     - Reset permissions if needed
+     - Allow notifications when prompted
+
+#### Common Error Messages
+
+- **"Push notifications are not supported in this browser"**
+  - Check browser compatibility and version
+  - Ensure you're not in Incognito mode
+  - Verify you're using HTTPS or localhost
+
+- **"Connection is not secure"**
+  - Use `localhost:3001` instead of `0.0.0.0:3001`
+  - Or enable HTTPS in production
+
+- **"Not allowed in Incognito"**
+  - Exit Incognito/Private browsing mode
+  - Use a regular browser window
+
 ## Notes
 
 - Users are automatically linked to the "User Registration App" application in Push service
 - Fingerprints are hashed before storage
 - JWT tokens expire after 24 hours
 - Service worker is automatically registered for push notifications
+- The application allows `0.0.0.0` for development, but `localhost` is recommended
 

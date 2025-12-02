@@ -58,3 +58,17 @@ class User(Document):
         name = "users"
         indexes = ["username", "email"]
 
+
+class UserFingerprint(Document):
+    """User fingerprint model for device identification."""
+    
+    user_id: str = Field(..., index=True)  # Reference to User.id
+    fingerprint_hash: str = Field(..., index=True)  # Hashed fingerprint
+    device_info: Optional[dict] = None  # Device information (browser, OS, etc.)
+    created_at: datetime = datetime.utcnow()
+    updated_at: datetime = datetime.utcnow()
+    
+    class Settings:
+        name = "user_fingerprints"
+        indexes = ["user_id", "fingerprint_hash"]
+

@@ -1,5 +1,6 @@
 """FastAPI application for User Registration with Push Integration."""
 import logging
+import sys
 from fastapi import FastAPI, HTTPException, Depends, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -16,6 +17,15 @@ from push_integration import (
     subscribe_user_to_push,
     send_push_to_user,
     send_push_broadcast
+)
+
+# Configure logging to output to stdout/stderr
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
 )
 
 logger = logging.getLogger(__name__)

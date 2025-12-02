@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from typing import Optional, Dict, List
 from datetime import datetime
 from database import init_database
-from db_models import PushSubscription, Admin, Application, User
+from db_models import PushSubscription, Admin, Application, User, UserFingerprint
 from push_service import send_push_notification, get_vapid_public_key
 from generate_vapid_keys import ensure_vapid_keys
 from auth import (
@@ -213,6 +213,32 @@ class PushResponse(BaseModel):
     total: int = 0
 
 
+class FingerprintInfo(BaseModel):
+    """Fingerprint summary information."""
+    browser: Optional[str] = None
+    os: Optional[str] = None
+    device: Optional[str] = None
+
+
+class RegisteredUserResponse(BaseModel):
+    """Registered user response model with fingerprint information."""
+    id: str
+    username: str
+    email: str
+    created_at: datetime
+    fingerprint: Optional[FingerprintInfo] = None
+    has_push_subscription: bool = False
+    push_subscription_id: Optional[str] = None
+
+
+class RegisteredUserListResponse(BaseModel):
+    """Registered users list response model."""
+    users: List[RegisteredUserResponse]
+    total: int
+    limit: int
+    offset: int
+
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize database and ensure VAPID keys exist on startup."""
@@ -231,8 +257,8 @@ async def startup_event():
         logger.info("VAPID keys are configured and valid.")
     
     # Initialize database
-    from db_models import PushSubscription, Admin, Application, User
-    await init_database([PushSubscription, Admin, Application, User])
+    from db_models import PushSubscription, Admin, Application, User, UserFingerprint
+    await init_database([PushSubscription, Admin, Application, User, UserFingerprint])
     
     # Check if any admin exists, if not create default admin
     admin_count = await Admin.find({}).count()
@@ -984,6 +1010,98 @@ async def get_all_users(
     except Exception as e:
         logger.error(f"Error getting all users: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error getting all users: {str(e)}")
+
+
+@api_router.get("/admin/users/registered", response_model=RegisteredUserListResponse)
+async def get_registered_users(
+    limit: int = Query(10, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    username: Optional[str] = Query(None),
+    email: Optional[str] = Query(None),
+    browser: Optional[str] = Query(None),
+    os: Optional[str] = Query(None),
+    current_admin = Depends(get_current_admin_with_permissions)
+):
+    """Get registered users from users collection with fingerprint information. Regular admins can see all registered users."""
+    try:
+        # Build filter for users
+        user_filter = {}
+        
+        # Filter by username (partial match using regex)
+        if username:
+            user_filter["username"] = {"$regex": username, "$options": "i"}
+        
+        # Filter by email (partial match using regex)
+        if email:
+            user_filter["email"] = {"$regex": email, "$options": "i"}
+        
+        # Get total count of users
+        total_users = await User.find(user_filter).count()
+        
+        # Get paginated users
+        users = await User.find(user_filter).skip(offset).limit(limit).to_list()
+        
+        # Get all fingerprints for these users
+        user_ids = [str(user.id) for user in users]
+        fingerprints = await UserFingerprint.find({"user_id": {"$in": user_ids}}).to_list()
+        
+        # Create a map of user_id to fingerprint
+        fingerprint_map = {}
+        for fp in fingerprints:
+            fingerprint_map[fp.user_id] = fp
+        
+        # Get all push subscriptions for these users
+        subscriptions = await PushSubscription.find({"user_id": {"$in": user_ids}}).to_list()
+        
+        # Create a map of user_id to subscription
+        subscription_map = {}
+        for sub in subscriptions:
+            if sub.user_id:
+                subscription_map[sub.user_id] = sub
+        
+        # Build response
+        registered_users = []
+        for user in users:
+            user_id_str = str(user.id)
+            fingerprint = fingerprint_map.get(user_id_str)
+            subscription = subscription_map.get(user_id_str)
+            
+            # Extract fingerprint info
+            fingerprint_info = None
+            if fingerprint and fingerprint.device_info:
+                fingerprint_info = FingerprintInfo(
+                    browser=fingerprint.device_info.get("browser"),
+                    os=fingerprint.device_info.get("os"),
+                    device=fingerprint.device_info.get("device")
+                )
+            
+            # Apply browser/os filters if provided
+            if browser and fingerprint_info:
+                if fingerprint_info.browser and browser.lower() not in fingerprint_info.browser.lower():
+                    continue
+            if os and fingerprint_info:
+                if fingerprint_info.os and os.lower() not in fingerprint_info.os.lower():
+                    continue
+            
+            registered_users.append(RegisteredUserResponse(
+                id=user_id_str,
+                username=user.username,
+                email=user.email,
+                created_at=user.created_at,
+                fingerprint=fingerprint_info,
+                has_push_subscription=subscription is not None,
+                push_subscription_id=str(subscription.id) if subscription else None
+            ))
+        
+        return RegisteredUserListResponse(
+            users=registered_users,
+            total=total_users,
+            limit=limit,
+            offset=offset
+        )
+    except Exception as e:
+        logger.error(f"Error getting registered users: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error getting registered users: {str(e)}")
 
 
 @api_router.get("/admin/users/{user_id}", response_model=UserResponse)
