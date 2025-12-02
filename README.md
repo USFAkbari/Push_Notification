@@ -178,40 +178,8 @@ Before deploying with Docker, ensure you have:
 - **Docker Compose v2.20+** (included with Docker)
 - **VAPID keys** generated (see Backend Setup section)
 
-### Quick Start
 
-#### 1. Generate VAPID Keys
-
-```bash
-cd backend
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-python generate_vapid_keys.py
-```
-
-Copy the generated keys for the next step.
-
-#### 2. Create Environment File
-
-Create a `.env` file in the project root:
-
-```bash
-# From project root
-cat > .env << EOF
-# Push Notification Service VAPID Keys
-VAPID_PUBLIC_KEY=your_vapid_public_key_here
-VAPID_PRIVATE_KEY=your_vapid_private_key_here
-VAPID_EMAIL=mailto:your-email@example.com
-
-# User Registration App Configuration (optional)
-PUSH_ADMIN_USERNAME=admin
-PUSH_ADMIN_PASSWORD=your_admin_password
-JWT_SECRET_KEY=your_jwt_secret_key_here
-EOF
-```
-
-#### 3. Start All Services
+## 3. Start All Services
 
 **Using Full Version (default):**
 
