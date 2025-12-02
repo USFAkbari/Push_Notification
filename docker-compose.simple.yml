@@ -1,32 +1,14 @@
 services:
   # ============================================================================
-  # MongoDB Service - Shared database for all applications
-  # ============================================================================
-  mongodb:
-    image: mongo:latest
-    container_name: push-notification-mongodb
-    ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_DATABASE: push_db
-    volumes:
-      - mongodb_data:/data/db
-    networks:
-      - app-network
-    restart: unless-stopped
-
-  # ============================================================================
   # Push Notification Backend Service
   # ============================================================================
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: push-notification-backend
-    ports:
-      - "8000:8000"
+    container_name: push-backend
     environment:
-      - MONGODB_URI=mongodb://mongodb:27017/push_db
+      - MONGODB_URI=mongodb://root:ea029108iideroq4c0f9a982a489f606b76@mongo_db:27017/push_db?authSource=admin
       - DATABASE_NAME=push_db
       - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
       - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-}
@@ -34,7 +16,7 @@ services:
     depends_on:
       - mongodb
     networks:
-      - app-network
+      - shamim-network
     volumes:
       - ./backend:/app
     restart: unless-stopped
@@ -46,76 +28,21 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: push-notification-frontend
-    ports:
-      - "3000:80"
+    container_name: push-front
     environment:
-      - VITE_API_BASE_URL=http://localhost:8000
+      - VITE_API_BASE_URL=https://push.shamim313.com/api-v1
     depends_on:
       - backend
     networks:
-      - app-network
-    restart: unless-stopped
-
-  # ============================================================================
-  # User Registration Backend Service
-  # ============================================================================
-  user-registration-backend:
-    build:
-      context: ./test_Web_Aplication/backend
-      dockerfile: Dockerfile
-    container_name: user-registration-backend
-    ports:
-      - "8001:8000"
-    environment:
-      - MONGODB_URI=mongodb://mongodb:27017/push_db
-      - DATABASE_NAME=push_db
-      - PUSH_SERVICE_URL=http://backend:8000
-      - PUSH_ADMIN_USERNAME=${PUSH_ADMIN_USERNAME:-admin}
-      - PUSH_ADMIN_PASSWORD=${PUSH_ADMIN_PASSWORD:-admin}
-      - PUSH_APPLICATION_NAME=User Registration App
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-changeme_secret_key_here}
-    depends_on:
-      - mongodb
-      - backend
-    networks:
-      - app-network
-    volumes:
-      - ./test_Web_Aplication/backend:/app
-    restart: unless-stopped
-
-  # ============================================================================
-  # User Registration Frontend Service
-  # ============================================================================
-  user-registration-frontend:
-    build:
-      context: ./test_Web_Aplication/frontend
-      dockerfile: Dockerfile
-    container_name: user-registration-frontend
-    ports:
-      - "3001:80"
-    environment:
-      - VITE_API_BASE_URL=http://localhost:8001/api
-      - VITE_PUSH_SERVICE_URL=https://push.shamim313.com/api-v1
-    depends_on:
-      - user-registration-backend
-    networks:
-      - app-network
+      - shamim-network
     restart: unless-stopped
 
 # ============================================================================
 # Networks Configuration
 # ============================================================================
 networks:
-  app-network:
-    driver: bridge
-    name: push-notification-network
-
-# ============================================================================
-# Volumes Configuration
-# ============================================================================
-volumes:
-  mongodb_data:
-    driver: local
-    name: push-notification-mongodb-data
-
+  # External network from shamim-old project for service communication
+  shamim-network:
+    external: true
+  mongo_network:
+    external: true
