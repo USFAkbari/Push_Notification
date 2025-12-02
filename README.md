@@ -23,7 +23,11 @@ Both applications support single-client and broadcast (multi-client) push notifi
 2. **Create `.env` file** with VAPID keys and other configuration
 3. **Start all services:**
    ```bash
+   # Full version (with health checks, resource limits)
    docker compose up -d --build
+   
+   # Or simple version (minimal config, faster startup)
+   docker compose -f docker-compose.simple.yml up -d --build
    ```
 4. **Access the applications:**
    - Push Notification Frontend: http://localhost:3000
@@ -126,7 +130,8 @@ Push_Notification/
 │   │   ├── nginx.conf            # Nginx configuration for production
 │   │   └── Dockerfile            # Frontend Docker image
 │   └── README.md                 # User Registration App documentation
-├── docker-compose.yml            # Docker Compose v2 orchestration (all services)
+├── docker-compose.yml            # Docker Compose v2 orchestration (full version with health checks)
+├── docker-compose.simple.yml     # Docker Compose v2 simple version (minimal config)
 ├── .dockerignore                 # Root Docker ignore rules
 └── README.md                     # This file
 ```
@@ -139,6 +144,32 @@ Push_Notification/
 <summary><h2>🐳 Docker Deployment (Docker Compose v2)</h2></summary>
 
 This project uses **Docker Compose v2** syntax (no `version` field). The `docker compose` command is built into Docker CLI (Docker 20.10+).
+
+### Available Docker Compose Files
+
+The project provides two Docker Compose files:
+
+1. **`docker-compose.yml`** (Full version) - Includes health checks, resource limits, and production-ready features
+   - Health checks for all services
+   - Resource limits (CPU and memory)
+   - Service health conditions in dependencies
+   - Recommended for production use
+
+2. **`docker-compose.simple.yml`** (Simple version) - Minimal configuration without extra features
+   - No health checks
+   - No resource limits
+   - Simple dependencies
+   - Perfect for development and quick testing
+
+**Use the simple version for:**
+- Quick local development
+- Testing and experimentation
+- When you don't need health checks or resource limits
+
+**Use the full version for:**
+- Production deployments
+- When you need health monitoring
+- When you need resource constraints
 
 ### Prerequisites
 
@@ -182,12 +213,26 @@ EOF
 
 #### 3. Start All Services
 
-Using Docker Compose v2 command syntax:
+**Using Full Version (default):**
 
 ```bash
 # Build and start all services in detached mode
 docker compose up -d --build
 
+# Or explicitly specify the file
+docker compose -f docker-compose.yml up -d --build
+```
+
+**Using Simple Version:**
+
+```bash
+# Build and start all services using simple configuration
+docker compose -f docker-compose.simple.yml up -d --build
+```
+
+**Common Commands:**
+
+```bash
 # View service status
 docker compose ps
 
@@ -197,6 +242,10 @@ docker compose logs -f
 # View logs for specific service
 docker compose logs -f backend
 docker compose logs -f user-registration-backend
+
+# For simple version, use the same commands with -f flag
+docker compose -f docker-compose.simple.yml ps
+docker compose -f docker-compose.simple.yml logs -f
 ```
 
 #### 4. Verify Services
@@ -221,6 +270,64 @@ You should see all five services in "Up" status:
 - **User Registration Frontend**: http://localhost:3001
 - **User Registration Backend API**: http://localhost:8001
 - **MongoDB**: localhost:27017
+
+<details>
+<summary><h3>Full vs Simple Docker Compose Files</h3></summary>
+
+### Comparison
+
+| Feature | Full Version | Simple Version |
+|---------|-------------|----------------|
+| **File Name** | `docker-compose.yml` | `docker-compose.simple.yml` |
+| **Health Checks** | ✅ Included | ❌ Not included |
+| **Resource Limits** | ✅ Included | ❌ Not included |
+| **Service Health Conditions** | ✅ Included | ❌ Simple dependencies |
+| **All Services** | ✅ All 5 services | ✅ All 5 services |
+| **Networks & Volumes** | ✅ Configured | ✅ Configured |
+| **Use Case** | Production | Development/Testing |
+
+### When to Use Simple Version
+
+The simple version is perfect when you:
+- Need quick setup for local development
+- Want faster startup (no health check delays)
+- Don't need resource monitoring
+- Are just testing or experimenting
+- Have limited system resources
+
+### When to Use Full Version
+
+Use the full version when you:
+- Deploy to production
+- Need health monitoring
+- Want resource constraints
+- Need service health dependencies
+- Want production-ready configuration
+
+### Switching Between Versions
+
+You can easily switch between versions:
+
+```bash
+# Stop current version
+docker compose down
+
+# Start with simple version
+docker compose -f docker-compose.simple.yml up -d --build
+
+# Or switch back to full version
+docker compose -f docker-compose.yml up -d --build
+```
+
+Both versions use the same:
+- Service names
+- Ports
+- Environment variables
+- Networks and volumes
+
+So you can switch between them without any issues.
+
+</details>
 
 <details>
 <summary><h3>Docker Services Overview</h3></summary>
@@ -528,7 +635,12 @@ The `${VARIABLE:-default}` syntax provides default values if variable is not set
 **Port conflicts:**
 - Check what's using the port: `lsof -i :8000`
 - Stop conflicting services
-- Change ports in `docker-compose.yml` if needed
+- Change ports in `docker-compose.yml` or `docker-compose.simple.yml` if needed
+
+**Choosing between full and simple version:**
+- Use `docker-compose.simple.yml` for quick testing and development
+- Use `docker-compose.yml` for production or when you need monitoring
+- Both files are functionally equivalent, simple version just lacks extra features
 
 **Volume permissions:**
 - Check volume permissions: `docker volume inspect push-notification-mongodb-data`
