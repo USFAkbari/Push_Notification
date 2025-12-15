@@ -8,7 +8,7 @@ A complete web application for user registration with fingerprint tracking and P
 - Device fingerprint tracking
 - Push notification subscription
 - Integration with existing Push service
-- Users automatically linked to application in Push service
+- Users automatically linked to application in Push 
 
 ## Project Structure
 
