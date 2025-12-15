@@ -101,10 +101,11 @@
       
       <form on:submit|preventDefault={handleSubmit}>
         <div class="form-control mb-4">
-          <label class="label">
+          <label class="label" for="register-username">
             <span class="label-text">Username</span>
           </label>
           <input 
+            id="register-username"
             type="text" 
             placeholder="Enter username" 
             class="input input-bordered {errors.username ? 'input-error' : ''}"
@@ -112,17 +113,18 @@
             disabled={isLoading}
           />
           {#if errors.username}
-            <label class="label">
+            <div class="label">
               <span class="label-text-alt text-error">{errors.username}</span>
-            </label>
+            </div>
           {/if}
         </div>
         
         <div class="form-control mb-4">
-          <label class="label">
+          <label class="label" for="register-email">
             <span class="label-text">Email</span>
           </label>
           <input 
+            id="register-email"
             type="email" 
             placeholder="Enter email" 
             class="input input-bordered {errors.email ? 'input-error' : ''}"
@@ -130,17 +132,18 @@
             disabled={isLoading}
           />
           {#if errors.email}
-            <label class="label">
+            <div class="label">
               <span class="label-text-alt text-error">{errors.email}</span>
-            </label>
+            </div>
           {/if}
         </div>
         
         <div class="form-control mb-4">
-          <label class="label">
+          <label class="label" for="register-password">
             <span class="label-text">Password</span>
           </label>
           <input 
+            id="register-password"
             type="password" 
             placeholder="Enter password" 
             class="input input-bordered {errors.password ? 'input-error' : ''}"
@@ -148,17 +151,18 @@
             disabled={isLoading}
           />
           {#if errors.password}
-            <label class="label">
+            <div class="label">
               <span class="label-text-alt text-error">{errors.password}</span>
-            </label>
+            </div>
           {/if}
         </div>
         
         <div class="form-control mb-4">
-          <label class="label">
+          <label class="label" for="register-confirm-password">
             <span class="label-text">Confirm Password</span>
           </label>
           <input 
+            id="register-confirm-password"
             type="password" 
             placeholder="Confirm password" 
             class="input input-bordered {errors.confirmPassword ? 'input-error' : ''}"
@@ -166,9 +170,9 @@
             disabled={isLoading}
           />
           {#if errors.confirmPassword}
-            <label class="label">
+            <div class="label">
               <span class="label-text-alt text-error">{errors.confirmPassword}</span>
-            </label>
+            </div>
           {/if}
         </div>
         

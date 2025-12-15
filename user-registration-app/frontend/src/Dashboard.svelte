@@ -336,10 +336,11 @@
           <p class="text-sm text-gray-600 mb-4">Send a test push notification to yourself</p>
           
           <div class="form-control mb-4">
-            <label class="label">
+            <label class="label" for="dashboard-push-title">
               <span class="label-text">Title</span>
             </label>
             <input 
+              id="dashboard-push-title"
               type="text" 
               placeholder="Notification title" 
               class="input input-bordered"
@@ -349,10 +350,11 @@
           </div>
           
           <div class="form-control mb-4">
-            <label class="label">
+            <label class="label" for="dashboard-push-body">
               <span class="label-text">Body</span>
             </label>
             <textarea 
+              id="dashboard-push-body"
               placeholder="Notification body" 
               class="textarea textarea-bordered"
               bind:value={pushBody}

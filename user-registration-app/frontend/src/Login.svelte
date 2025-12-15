@@ -64,10 +64,11 @@
       
       <form on:submit|preventDefault={handleSubmit}>
         <div class="form-control mb-4">
-          <label class="label">
+          <label class="label" for="login-username">
             <span class="label-text">Username or Email</span>
           </label>
           <input 
+            id="login-username"
             type="text" 
             placeholder="Enter username or email" 
             class="input input-bordered {errors.username ? 'input-error' : ''}"
@@ -75,17 +76,18 @@
             disabled={isLoading}
           />
           {#if errors.username}
-            <label class="label">
+            <div class="label">
               <span class="label-text-alt text-error">{errors.username}</span>
-            </label>
+            </div>
           {/if}
         </div>
         
         <div class="form-control mb-4">
-          <label class="label">
+          <label class="label" for="login-password">
             <span class="label-text">Password</span>
           </label>
           <input 
+            id="login-password"
             type="password" 
             placeholder="Enter password" 
             class="input input-bordered {errors.password ? 'input-error' : ''}"
@@ -93,9 +95,9 @@
             disabled={isLoading}
           />
           {#if errors.password}
-            <label class="label">
+            <div class="label">
               <span class="label-text-alt text-error">{errors.password}</span>
-            </label>
+            </div>
           {/if}
         </div>
         

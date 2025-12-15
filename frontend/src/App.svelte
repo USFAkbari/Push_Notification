@@ -320,10 +320,11 @@
               <h2 class="card-title">Permission & Subscription</h2>
               
               <div class="form-control mb-4">
-                <label class="label">
+                <label class="label" for="public-user-id">
                   <span class="label-text">User ID (optional)</span>
                 </label>
                 <input 
+                  id="public-user-id"
                   type="text" 
                   placeholder="Enter user ID" 
                   class="input input-bordered w-full"
