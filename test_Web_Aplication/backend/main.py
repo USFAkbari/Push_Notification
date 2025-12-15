@@ -1,6 +1,9 @@
 """FastAPI application for User Registration with Push Integration."""
 import logging
+<<<<<<< HEAD
 import sys
+=======
+>>>>>>> 02675bc (After Deploy Shamim)
 from fastapi import FastAPI, HTTPException, Depends, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -19,6 +22,7 @@ from push_integration import (
     send_push_broadcast
 )
 
+<<<<<<< HEAD
 # Configure logging to output to stdout/stderr
 logging.basicConfig(
     level=logging.INFO,
@@ -28,6 +32,8 @@ logging.basicConfig(
     ]
 )
 
+=======
+>>>>>>> 02675bc (After Deploy Shamim)
 logger = logging.getLogger(__name__)
 
 # Create main FastAPI app

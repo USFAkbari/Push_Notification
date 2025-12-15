@@ -122,8 +122,13 @@ async def subscribe_user_to_push(
             # We need to find it by user_id
             token = await get_admin_token()
             async with httpx.AsyncClient(timeout=10.0) as client:
+<<<<<<< HEAD
                 # Get user subscriptions - wait a bit for subscription to be saved
                 await asyncio.sleep(0.5)
+=======
+            # Get user subscriptions - wait a bit for subscription to be saved
+            await asyncio.sleep(0.5)
+>>>>>>> 02675bc (After Deploy Shamim)
                 
                 # Get user subscriptions
                 response = await client.get(

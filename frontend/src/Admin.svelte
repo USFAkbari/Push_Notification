@@ -2,12 +2,15 @@
   import axios from 'axios';
   import { onMount } from 'svelte';
 
+<<<<<<< HEAD
   // Ensure axios baseURL is set (in case Admin is loaded before main.js)
   if (!axios.defaults.baseURL) {
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
     axios.defaults.baseURL = API_BASE_URL || '/api-v1';
   }
 
+=======
+>>>>>>> 02675bc (After Deploy Shamim)
   let isAuthenticated = false;
   let username = '';
   let password = '';
@@ -43,6 +46,7 @@
   let userToAssign = null;
   let assignApplicationId = '';
 
+<<<<<<< HEAD
   // Registered users state
   let registeredUsers = [];
   let totalRegisteredUsers = 0;
@@ -55,6 +59,8 @@
   let selectedRegisteredUser = null;
   let showRegisteredUsersInUsersTab = false;
 
+=======
+>>>>>>> 02675bc (After Deploy Shamim)
   // Push notification state
   let pushTitle = '';
   let pushBody = '';
@@ -316,6 +322,7 @@
     }
   }
 
+<<<<<<< HEAD
   // Load registered users with filters
   async function loadRegisteredUsers() {
     try {
@@ -377,6 +384,8 @@
 
   const totalRegisteredUsersPages = Math.ceil(totalRegisteredUsers / registeredUsersLimit);
 
+=======
+>>>>>>> 02675bc (After Deploy Shamim)
   // Get user details
   async function getUserDetails(userId) {
     try {
@@ -490,26 +499,39 @@
       };
 
       let response;
+<<<<<<< HEAD
       let endpoint = '';
+=======
+>>>>>>> 02675bc (After Deploy Shamim)
       
       if (pushRecipientType === 'single') {
         if (!pushSelectedUserId) {
           showMessage('Please select a user', 'error');
           return;
         }
+<<<<<<< HEAD
         endpoint = `/admin/push/single/${pushSelectedUserId}`;
         response = await axios.post(endpoint, payload);
       } else if (pushRecipientType === 'all') {
         endpoint = '/admin/push/broadcast';
         response = await axios.post(endpoint, payload);
+=======
+        response = await axios.post(`/admin/push/single/${pushSelectedUserId}`, payload);
+      } else if (pushRecipientType === 'all') {
+        response = await axios.post('/admin/push/broadcast', payload);
+>>>>>>> 02675bc (After Deploy Shamim)
       } else if (pushRecipientType === 'application') {
         if (!pushSelectedAppId) {
           showMessage('Please select an application', 'error');
           return;
         }
+<<<<<<< HEAD
         endpoint = `/admin/push/application/${pushSelectedAppId}`;
         console.log('Sending push to application:', pushSelectedAppId, 'Endpoint:', endpoint);
         response = await axios.post(endpoint, payload);
+=======
+        response = await axios.post(`/admin/push/application/${pushSelectedAppId}`, payload);
+>>>>>>> 02675bc (After Deploy Shamim)
       } else if (pushRecipientType === 'list') {
         if (!pushUserIds) {
           showMessage('Please enter user IDs', 'error');
@@ -520,8 +542,12 @@
           showMessage('Please enter at least one user ID', 'error');
           return;
         }
+<<<<<<< HEAD
         endpoint = '/admin/push/users';
         response = await axios.post(endpoint, {
+=======
+        response = await axios.post('/admin/push/users', {
+>>>>>>> 02675bc (After Deploy Shamim)
           user_ids: userIdsList,
           payload: payload
         });
@@ -533,6 +559,7 @@
         pushResult.success_count > 0 ? 'success' : 'error'
       );
     } catch (error) {
+<<<<<<< HEAD
       console.error('Push notification error:', error);
       console.error('Error details:', {
         message: error.message,
@@ -542,6 +569,9 @@
       });
       const errorMessage = error.response?.data?.detail || error.message || 'Failed to send push notification';
       showMessage(errorMessage, 'error');
+=======
+      showMessage(error.response?.data?.detail || 'Failed to send push notification', 'error');
+>>>>>>> 02675bc (After Deploy Shamim)
       pushResult = null;
     } finally {
       isLoading = false;
@@ -805,12 +835,15 @@
             >
               Push Notifications
             </button>
+<<<<<<< HEAD
             <button 
               class="tab {activeTab === 'registered-users' ? 'tab-active' : ''} whitespace-nowrap"
               on:click={() => { activeTab = 'registered-users'; loadRegisteredUsers(); }}
             >
               Registered Users
             </button>
+=======
+>>>>>>> 02675bc (After Deploy Shamim)
             {#if currentAdminInfo?.is_super_admin}
             <button 
               class="tab {activeTab === 'admins' ? 'tab-active' : ''} whitespace-nowrap"
@@ -918,6 +951,7 @@
               <div class="card-body">
                 <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
                   <h2 class="card-title text-xl md:text-2xl">Users</h2>
+<<<<<<< HEAD
                   <div class="flex gap-2">
                     <button class="btn btn-secondary btn-sm md:btn-md" on:click={() => { showRegisteredUsersInUsersTab = !showRegisteredUsersInUsersTab; if (showRegisteredUsersInUsersTab) loadRegisteredUsers(); }}>
                       {showRegisteredUsersInUsersTab ? 'Hide Registered Users' : 'Show Registered Users'}
@@ -926,6 +960,11 @@
                       {showUserForm ? 'Cancel' : 'Create User'}
                     </button>
                   </div>
+=======
+                  <button class="btn btn-primary btn-sm md:btn-md" on:click={() => { showUserForm = !showUserForm; userFormData = { user_id: '', endpoint: '', p256dh: '', auth: '', application_id: '' }; }}>
+                    {showUserForm ? 'Cancel' : 'Create User'}
+                  </button>
+>>>>>>> 02675bc (After Deploy Shamim)
                 </div>
 
                 {#if showUserForm}
@@ -1115,6 +1154,7 @@
                     </button>
                   </div>
                 {/if}
+<<<<<<< HEAD
 
                 <!-- Registered Users Section -->
                 {#if showRegisteredUsersInUsersTab}
@@ -1365,6 +1405,8 @@
                     </button>
                   </div>
                 {/if}
+=======
+>>>>>>> 02675bc (After Deploy Shamim)
               </div>
             </div>
           {/if}
@@ -1713,6 +1755,7 @@
             </div>
           {/if}
 
+<<<<<<< HEAD
           <!-- Registered User Details Modal -->
           {#if selectedRegisteredUser}
             <div class="modal modal-open">
@@ -1753,6 +1796,8 @@
             </div>
           {/if}
 
+=======
+>>>>>>> 02675bc (After Deploy Shamim)
           <!-- Assign User Modal -->
           {#if showAssignModal && userToAssign}
             <div class="modal modal-open">

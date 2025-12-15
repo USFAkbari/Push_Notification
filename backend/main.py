@@ -7,12 +7,21 @@ from pydantic import BaseModel
 from typing import Optional, Dict, List
 from datetime import datetime
 from database import init_database
+<<<<<<< HEAD
 from db_models import PushSubscription, Admin, Application, User, UserFingerprint
+=======
+from db_models import PushSubscription, Admin, Application
+>>>>>>> 02675bc (After Deploy Shamim)
 from push_service import send_push_notification, get_vapid_public_key
 from generate_vapid_keys import ensure_vapid_keys
 from auth import (
     verify_password, get_password_hash, create_access_token,
+<<<<<<< HEAD
     get_current_admin, get_current_admin_with_permissions, check_application_access, verify_token
+=======
+    get_current_admin, get_current_admin_with_permissions, check_application_access, verify_token,
+    verify_application_secret
+>>>>>>> 02675bc (After Deploy Shamim)
 )
 from app_secret import generate_application_secret, hash_application_secret
 
@@ -62,6 +71,10 @@ class SubscriptionData(BaseModel):
     endpoint: str
     keys: Dict
     user_id: Optional[str] = None
+<<<<<<< HEAD
+=======
+    app_name: Optional[str] = None  # Application name for auto-linking
+>>>>>>> 02675bc (After Deploy Shamim)
 
 
 class PushPayload(BaseModel):
@@ -133,6 +146,7 @@ class UserListResponse(BaseModel):
     offset: int
 
 
+<<<<<<< HEAD
 class AllUserResponse(BaseModel):
     """All users response model with subscription status."""
     id: str
@@ -155,6 +169,8 @@ class AllUserListResponse(BaseModel):
     offset: int
 
 
+=======
+>>>>>>> 02675bc (After Deploy Shamim)
 class PushToUsersRequest(BaseModel):
     """Push notification request for list of users."""
     user_ids: List[str]
@@ -213,6 +229,7 @@ class PushResponse(BaseModel):
     total: int = 0
 
 
+<<<<<<< HEAD
 class FingerprintInfo(BaseModel):
     """Fingerprint summary information."""
     browser: Optional[str] = None
@@ -239,6 +256,8 @@ class RegisteredUserListResponse(BaseModel):
     offset: int
 
 
+=======
+>>>>>>> 02675bc (After Deploy Shamim)
 @app.on_event("startup")
 async def startup_event():
     """Initialize database and ensure VAPID keys exist on startup."""
@@ -257,8 +276,13 @@ async def startup_event():
         logger.info("VAPID keys are configured and valid.")
     
     # Initialize database
+<<<<<<< HEAD
     from db_models import PushSubscription, Admin, Application, User, UserFingerprint
     await init_database([PushSubscription, Admin, Application, User, UserFingerprint])
+=======
+    from db_models import PushSubscription, Admin, Application
+    await init_database([PushSubscription, Admin, Application])
+>>>>>>> 02675bc (After Deploy Shamim)
     
     # Check if any admin exists, if not create default admin
     admin_count = await Admin.find({}).count()
@@ -334,8 +358,35 @@ async def subscribe(subscription: SubscriptionData):
     try:
         logger.info(f"Received subscription request for endpoint: {subscription.endpoint[:50]}...")
         logger.info(f"User ID: {subscription.user_id}")
+<<<<<<< HEAD
         logger.info(f"Has keys: p256dh={bool(subscription.keys.get('p256dh'))}, auth={bool(subscription.keys.get('auth'))}")
         
+=======
+        logger.info(f"App Name: {subscription.app_name}")
+        logger.info(f"Has keys: p256dh={bool(subscription.keys.get('p256dh'))}, auth={bool(subscription.keys.get('auth'))}")
+        
+        # Find or create application if app_name is provided
+        application_id = None
+        if subscription.app_name:
+            application = await Application.find_one({"name": subscription.app_name})
+            if application:
+                logger.info(f"Found existing application: {application.name} (ID: {application.id})")
+                application_id = str(application.id)
+            else:
+                # Auto-create application if it doesn't exist
+                logger.info(f"Creating new application: {subscription.app_name}")
+                secret = generate_application_secret()
+                secret_hash = hash_application_secret(secret)
+                new_app = Application(
+                    name=subscription.app_name,
+                    secret_hash=secret_hash,
+                    created_at=datetime.utcnow()
+                )
+                await new_app.insert()
+                application_id = str(new_app.id)
+                logger.info(f"Application created with ID: {application_id}")
+        
+>>>>>>> 02675bc (After Deploy Shamim)
         # Check if subscription already exists
         existing = await PushSubscription.find_one({"endpoint": subscription.endpoint})
         
@@ -344,8 +395,15 @@ async def subscribe(subscription: SubscriptionData):
             logger.info(f"Updating existing subscription for endpoint: {subscription.endpoint[:50]}...")
             existing.keys = subscription.keys
             existing.user_id = subscription.user_id
+<<<<<<< HEAD
             await existing.save()
             logger.info(f"Subscription updated successfully for user_id: {subscription.user_id}")
+=======
+            if application_id:
+                existing.application_id = application_id
+            await existing.save()
+            logger.info(f"Subscription updated successfully for user_id: {subscription.user_id}, application_id: {application_id}")
+>>>>>>> 02675bc (After Deploy Shamim)
             return {"success": True, "message": "Subscription updated"}
         
         # Create new subscription
@@ -354,16 +412,25 @@ async def subscribe(subscription: SubscriptionData):
             endpoint=subscription.endpoint,
             keys=subscription.keys,
             user_id=subscription.user_id,
+<<<<<<< HEAD
             created_at=datetime.utcnow()
         )
         await push_sub.insert()
         logger.info(f"Subscription stored successfully for user_id: {subscription.user_id}")
+=======
+            application_id=application_id,
+            created_at=datetime.utcnow()
+        )
+        await push_sub.insert()
+        logger.info(f"Subscription stored successfully for user_id: {subscription.user_id}, application_id: {application_id}")
+>>>>>>> 02675bc (After Deploy Shamim)
         return {"success": True, "message": "Subscription stored"}
     except Exception as e:
         logger.error(f"Error storing subscription: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error storing subscription: {str(e)}")
 
 
+<<<<<<< HEAD
 @api_router.post("/push/single/{user_id}")
 async def push_single(
     user_id: str,
@@ -377,6 +444,24 @@ async def push_single(
         
         if not subscription:
             raise HTTPException(status_code=404, detail="Subscription not found")
+=======
+@api_router.post("/push/single/{user_id}", response_model=PushResponse)
+async def push_single(
+    user_id: str,
+    payload: PushPayload,
+    application = Depends(verify_application_secret)
+):
+    """Send push notification to a specific user using X-Application-Secret authentication."""
+    try:
+        # Find subscription by user_id for this application
+        subscription = await PushSubscription.find_one({
+            "user_id": user_id,
+            "application_id": str(application.id)
+        })
+        
+        if not subscription:
+            raise HTTPException(status_code=404, detail="Subscription not found for this user in your application")
+>>>>>>> 02675bc (After Deploy Shamim)
         
         # Prepare subscription info for pywebpush
         subscription_info = {
@@ -391,6 +476,7 @@ async def push_single(
         )
         
         if not success:
+<<<<<<< HEAD
             raise HTTPException(status_code=500, detail="Failed to send push notification")
         
         return {"success": True, "message": "Push notification sent"}
@@ -412,6 +498,42 @@ async def push_broadcast(
         
         if not subscriptions:
             raise HTTPException(status_code=404, detail="No subscriptions found")
+=======
+            return PushResponse(
+                success=False,
+                message="Failed to send push notification",
+                success_count=0,
+                failed_count=1,
+                total=1
+            )
+        
+        return PushResponse(
+            success=True,
+            message="Push notification sent",
+            success_count=1,
+            failed_count=0,
+            total=1
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error sending push: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error sending push: {str(e)}")
+
+
+@api_router.post("/push/broadcast", response_model=PushResponse)
+async def push_broadcast(
+    payload: PushPayload,
+    application = Depends(verify_application_secret)
+):
+    """Send push notification to all users of this application using X-Application-Secret authentication."""
+    try:
+        # Get all subscriptions for this application
+        subscriptions = await PushSubscription.find({"application_id": str(application.id)}).to_list()
+        
+        if not subscriptions:
+            raise HTTPException(status_code=404, detail="No subscriptions found for this application")
+>>>>>>> 02675bc (After Deploy Shamim)
         
         success_count = 0
         failed_count = 0
@@ -432,6 +554,7 @@ async def push_broadcast(
             else:
                 failed_count += 1
         
+<<<<<<< HEAD
         return {
             "success": True,
             "message": "Broadcast push notifications sent",
@@ -445,6 +568,79 @@ async def push_broadcast(
         raise HTTPException(status_code=500, detail=f"Error sending broadcast: {str(e)}")
 
 
+=======
+        return PushResponse(
+            success=True,
+            message="Broadcast push notifications sent",
+            success_count=success_count,
+            failed_count=failed_count,
+            total=len(subscriptions)
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error sending broadcast: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error sending broadcast: {str(e)}")
+
+
+@api_router.post("/push/users", response_model=PushResponse)
+async def push_to_users(
+    request: PushToUsersRequest,
+    application = Depends(verify_application_secret)
+):
+    """Send push notification to multiple users using X-Application-Secret authentication."""
+    try:
+        if not request.user_ids:
+            raise HTTPException(status_code=400, detail="user_ids list cannot be empty")
+        
+        # Find subscriptions for all user_ids in this application
+        filter_dict = {
+            "user_id": {"$in": request.user_ids},
+            "application_id": str(application.id)
+        }
+        
+        subscriptions = await PushSubscription.find(filter_dict).to_list()
+        
+        if not subscriptions:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No subscriptions found for provided user_ids in this application"
+            )
+        
+        success_count = 0
+        failed_count = 0
+        
+        for subscription in subscriptions:
+            subscription_info = {
+                "endpoint": subscription.endpoint,
+                "keys": subscription.keys
+            }
+            
+            success = await send_push_notification(
+                subscription_info=subscription_info,
+                payload=request.payload.dict()
+            )
+            
+            if success:
+                success_count += 1
+            else:
+                failed_count += 1
+        
+        return PushResponse(
+            success=True,
+            message=f"Push notifications sent to {success_count} users",
+            success_count=success_count,
+            failed_count=failed_count,
+            total=len(request.user_ids)
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error sending push to users: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error sending push: {str(e)}")
+
+
+>>>>>>> 02675bc (After Deploy Shamim)
 # ==================== Admin Endpoints ====================
 
 @api_router.post("/admin/login", response_model=AdminLoginResponse)
@@ -868,6 +1064,7 @@ async def list_users(
         raise HTTPException(status_code=500, detail=f"Error listing users: {str(e)}")
 
 
+<<<<<<< HEAD
 @api_router.get("/admin/users/all", response_model=AllUserListResponse)
 async def get_all_users(
     limit: int = Query(10, ge=1, le=100),
@@ -1104,6 +1301,8 @@ async def get_registered_users(
         raise HTTPException(status_code=500, detail=f"Error getting registered users: {str(e)}")
 
 
+=======
+>>>>>>> 02675bc (After Deploy Shamim)
 @api_router.get("/admin/users/{user_id}", response_model=UserResponse)
 async def get_user(
     user_id: str,
@@ -1182,6 +1381,60 @@ async def delete_user(
         raise HTTPException(status_code=500, detail=f"Error deleting user: {str(e)}")
 
 
+<<<<<<< HEAD
+=======
+@api_router.get("/app/users", response_model=UserListResponse)
+async def list_app_users(
+    limit: int = Query(100, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    user_id: Optional[str] = Query(None),
+    application = Depends(verify_application_secret)
+):
+    """
+    List users for an application using X-Application-Secret authentication.
+    This endpoint is simpler and designed for app-to-service communication.
+    """
+    try:
+        # Build filter - only show users from this application
+        filter_dict = {"application_id": str(application.id)}
+        
+        # Filter by user_id (partial match using regex)
+        if user_id:
+            filter_dict["user_id"] = {"$regex": user_id, "$options": "i"}
+        
+        # Get total count
+        total = await PushSubscription.find(filter_dict).count()
+        
+        # Get paginated subscriptions
+        subscriptions = await PushSubscription.find(filter_dict).skip(offset).limit(limit).to_list()
+        
+        # Build user responses
+        user_responses = [
+            UserResponse(
+                id=str(sub.id),
+                user_id=sub.user_id,
+                endpoint=sub.endpoint,
+                application_id=sub.application_id,
+                application_name=application.name,
+                created_at=sub.created_at
+            )
+            for sub in subscriptions
+        ]
+        
+        return UserListResponse(
+            users=user_responses,
+            total=total,
+            limit=limit,
+            offset=offset
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error listing app users: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error listing users: {str(e)}")
+
+
+>>>>>>> 02675bc (After Deploy Shamim)
 @api_router.post("/admin/users", response_model=UserResponse)
 async def create_user(
     user_data: UserCreate,

@@ -1,4 +1,5 @@
 services:
+<<<<<<< HEAD
   # ============================================================================
   # MongoDB Service - Shared database for all applications
   # ============================================================================
@@ -33,10 +34,13 @@ services:
   # ============================================================================
   # Push Notification Backend Service
   # ============================================================================
+=======
+>>>>>>> 02675bc (After Deploy Shamim)
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+<<<<<<< HEAD
     container_name: push-notification-backend
     ports:
       - "8000:8000"
@@ -51,6 +55,18 @@ services:
         condition: service_healthy
     networks:
       - app-network
+=======
+    container_name: shamim_push_back
+    restart: unless-stopped
+    environment:
+      - MONGODB_URI=mongodb://root:ea029108iideroq4c0f9a982a489f606b76@mongo_db:27017/push_db?authSource=admin
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-}
+      - VAPID_EMAIL=${VAPID_EMAIL:-mailto:example@example.com}
+    networks:
+      - shamim_network
+      - mongo_network
+>>>>>>> 02675bc (After Deploy Shamim)
     volumes:
       - ./backend:/app
     healthcheck:
@@ -59,6 +75,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+<<<<<<< HEAD
     restart: unless-stopped
     deploy:
       resources:
@@ -72,10 +89,14 @@ services:
   # ============================================================================
   # Push Notification Frontend Service
   # ============================================================================
+=======
+
+>>>>>>> 02675bc (After Deploy Shamim)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+<<<<<<< HEAD
     container_name: push-notification-frontend
     ports:
       - "3000:80"
@@ -85,12 +106,23 @@ services:
       - backend
     networks:
       - app-network
+=======
+    container_name: shamim_push_front
+    restart: unless-stopped
+    environment:
+      - VITE_API_BASE_URL=https://push.shamim313.com/api-v1
+    depends_on:
+      - backend
+    networks:
+      - shamim_network
+>>>>>>> 02675bc (After Deploy Shamim)
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
       interval: 30s
       timeout: 3s
       retries: 3
       start_period: 5s
+<<<<<<< HEAD
     restart: unless-stopped
     deploy:
       resources:
@@ -194,3 +226,12 @@ volumes:
   mongodb_data:
     driver: local
     name: push-notification-mongodb-data
+=======
+
+networks:
+  shamim_network:
+    external: true
+  mongo_network:
+    external: true
+
+>>>>>>> 02675bc (After Deploy Shamim)

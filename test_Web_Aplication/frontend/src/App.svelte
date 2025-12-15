@@ -13,6 +13,7 @@
   }
   
   onMount(() => {
+<<<<<<< HEAD
     // Register service worker early for push notifications
     if ('serviceWorker' in navigator) {
       // Check if we're on HTTPS or localhost (required for service workers)
@@ -36,6 +37,17 @@
       }
     } else {
       console.warn('Service Worker is not supported in this browser');
+=======
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js')
+        .then(registration => {
+          console.log('Service Worker registered:', registration);
+        })
+        .catch(error => {
+          console.error('Service Worker registration failed:', error);
+        });
+>>>>>>> 02675bc (After Deploy Shamim)
     }
     
     // Handle routing

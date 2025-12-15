@@ -2,7 +2,11 @@
 from datetime import datetime
 from typing import Optional, List
 from beanie import Document
+<<<<<<< HEAD
 from pydantic import Field, EmailStr
+=======
+from pydantic import Field
+>>>>>>> 02675bc (After Deploy Shamim)
 
 
 class Admin(Document):
@@ -45,6 +49,7 @@ class PushSubscription(Document):
         name = "push_subscriptions"
         indexes = ["endpoint", "user_id", "application_id"]
 
+<<<<<<< HEAD
 
 class User(Document):
     """User model from User Registration App - for unified access."""
@@ -72,3 +77,5 @@ class UserFingerprint(Document):
         name = "user_fingerprints"
         indexes = ["user_id", "fingerprint_hash"]
 
+=======
+>>>>>>> 02675bc (After Deploy Shamim)

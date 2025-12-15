@@ -1,6 +1,11 @@
 <script>
   import { onMount } from 'svelte';
+<<<<<<< HEAD
   import { getCurrentUser, subscribeToPush, logout, isAuthenticated } from './services/api.js';
+=======
+  import { getCurrentUser, subscribeToPush, sendPush, logout, isAuthenticated } from './services/api.js';
+  import { getFingerprint } from './services/fingerprint.js';
+>>>>>>> 02675bc (After Deploy Shamim)
   
   const PUSH_SERVICE_URL = import.meta.env.VITE_PUSH_SERVICE_URL || 'http://localhost:8000/api-v1';
   
@@ -11,6 +16,7 @@
   let isLoading = false;
   let message = '';
   let messageType = 'info';
+<<<<<<< HEAD
   let autoSubscribing = false;
   let supportErrorType = null; // 'browser', 'https', 'incognito'
   
@@ -113,6 +119,19 @@
       return false;
     }
     
+=======
+  
+  // Push notification form
+  let pushTitle = '';
+  let pushBody = '';
+  
+  // Check if push notifications are supported
+  function checkSupport() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      subscriptionStatus = 'not-supported';
+      return false;
+    }
+>>>>>>> 02675bc (After Deploy Shamim)
     return true;
   }
   
@@ -131,6 +150,7 @@
   
   // Request notification permission
   async function requestPermission() {
+<<<<<<< HEAD
     const isSupported = await checkSupport();
     if (!isSupported) {
       // Error message already set by checkSupport()
@@ -138,10 +158,20 @@
     }
     
     try {
+=======
+    if (!checkSupport()) {
+      message = 'Push notifications are not supported in this browser';
+      return;
+    }
+    
+    try {
+      isLoading = true;
+>>>>>>> 02675bc (After Deploy Shamim)
       const permission = await Notification.requestPermission();
       
       if (permission === 'granted') {
         subscriptionStatus = 'granted';
+<<<<<<< HEAD
         return true;
       } else if (permission === 'denied') {
         subscriptionStatus = 'denied';
@@ -153,16 +183,34 @@
         message = 'Notification permission not granted. Please allow notifications when prompted.';
         messageType = 'info';
         return false;
+=======
+        message = 'Notification permission granted';
+        messageType = 'success';
+      } else if (permission === 'denied') {
+        subscriptionStatus = 'denied';
+        message = 'Notification permission denied';
+        messageType = 'error';
+      } else {
+        subscriptionStatus = 'default';
+        message = 'Notification permission default';
+        messageType = 'info';
+>>>>>>> 02675bc (After Deploy Shamim)
       }
     } catch (error) {
       console.error('Error requesting permission:', error);
       message = 'Error requesting notification permission';
+<<<<<<< HEAD
       messageType = 'error';
       return false;
+=======
+    } finally {
+      isLoading = false;
+>>>>>>> 02675bc (After Deploy Shamim)
     }
   }
   
   // Subscribe to push notifications
+<<<<<<< HEAD
   async function subscribe(silent = false) {
     const isSupported = await checkSupport();
     if (!isSupported) {
@@ -194,11 +242,30 @@
       const permissionGranted = await requestPermission();
       if (!permissionGranted) {
         return false;
+=======
+  async function subscribe() {
+    if (!checkSupport()) {
+      message = 'Push notifications are not supported in this browser';
+      return;
+    }
+    
+    if (!vapidPublicKey) {
+      message = 'VAPID key not loaded. Please refresh the page.';
+      return;
+    }
+    
+    if (subscriptionStatus !== 'granted') {
+      await requestPermission();
+      if (subscriptionStatus !== 'granted') {
+        message = 'Notification permission is required to subscribe.';
+        return;
+>>>>>>> 02675bc (After Deploy Shamim)
       }
     }
     
     try {
       isLoading = true;
+<<<<<<< HEAD
       autoSubscribing = true;
       
       if (!silent) {
@@ -234,6 +301,24 @@
       if (!silent) {
         message = 'Saving subscription...';
       }
+=======
+      message = 'Registering service worker...';
+      
+      // Register service worker
+      const registration = await navigator.serviceWorker.register('/service-worker.js');
+      await navigator.serviceWorker.ready;
+      
+      message = 'Creating push subscription...';
+      
+      // Create push subscription
+      const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
+      const pushSubscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: applicationServerKey
+      });
+      
+      message = 'Saving subscription...';
+>>>>>>> 02675bc (After Deploy Shamim)
       
       // Prepare subscription data
       const subscriptionData = {
@@ -251,6 +336,7 @@
       if (result.success) {
         subscription = pushSubscription;
         subscriptionStatus = 'subscribed';
+<<<<<<< HEAD
         if (!silent) {
           message = 'Successfully subscribed to push notifications!';
           messageType = 'success';
@@ -282,6 +368,55 @@
     } finally {
       isLoading = false;
       autoSubscribing = false;
+=======
+        message = 'Successfully subscribed to push notifications!';
+        messageType = 'success';
+      } else {
+        message = 'Failed to subscribe: ' + (result.message || 'Unknown error');
+        messageType = 'error';
+      }
+    } catch (error) {
+      console.error('Subscription error:', error);
+      message = `Failed to subscribe: ${error.message || 'Unknown error'}`;
+      messageType = 'error';
+    } finally {
+      isLoading = false;
+    }
+  }
+  
+  // Send test push notification
+  async function sendTestPush() {
+    if (!pushTitle.trim() || !pushBody.trim()) {
+      message = 'Please fill in title and body';
+      messageType = 'error';
+      return;
+    }
+    
+    try {
+      isLoading = true;
+      message = 'Sending push notification...';
+      
+      const result = await sendPush({
+        title: pushTitle.trim(),
+        body: pushBody.trim()
+      });
+      
+      if (result.success) {
+        message = 'Push notification sent successfully!';
+        messageType = 'success';
+        pushTitle = '';
+        pushBody = '';
+      } else {
+        message = 'Failed to send push: ' + (result.message || 'Unknown error');
+        messageType = 'error';
+      }
+    } catch (error) {
+      console.error('Send push error:', error);
+      message = `Failed to send push: ${error.response?.data?.detail || error.message || 'Unknown error'}`;
+      messageType = 'error';
+    } finally {
+      isLoading = false;
+>>>>>>> 02675bc (After Deploy Shamim)
     }
   }
   
@@ -314,6 +449,7 @@
   
   // Check existing subscription
   async function checkExistingSubscription() {
+<<<<<<< HEAD
     const isSupported = await checkSupport();
     if (!isSupported) {
       return false;
@@ -337,12 +473,23 @@
       }
       
       // Check for existing subscription
+=======
+    if (!checkSupport()) {
+      return;
+    }
+    
+    try {
+      const registration = await navigator.serviceWorker.ready;
+>>>>>>> 02675bc (After Deploy Shamim)
       const existingSubscription = await registration.pushManager.getSubscription();
       
       if (existingSubscription) {
         subscription = existingSubscription;
         subscriptionStatus = 'subscribed';
+<<<<<<< HEAD
         return true;
+=======
+>>>>>>> 02675bc (After Deploy Shamim)
       } else {
         const permission = Notification.permission;
         if (permission === 'granted') {
@@ -352,6 +499,7 @@
         } else {
           subscriptionStatus = 'default';
         }
+<<<<<<< HEAD
         return false;
       }
     } catch (error) {
@@ -381,6 +529,14 @@
     await subscribe(true);
   }
   
+=======
+      }
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+    }
+  }
+  
+>>>>>>> 02675bc (After Deploy Shamim)
   // Handle logout
   function handleLogout() {
     logout();
@@ -404,6 +560,7 @@
     }
     
     // Initialize push notifications
+<<<<<<< HEAD
     await checkSupport();
     await fetchVapidPublicKey();
     
@@ -417,6 +574,11 @@
         await autoSubscribe();
       }, 500);
     }
+=======
+    checkSupport();
+    await fetchVapidPublicKey();
+    await checkExistingSubscription();
+>>>>>>> 02675bc (After Deploy Shamim)
   });
 </script>
 
@@ -456,6 +618,7 @@
       <!-- Push Notification Subscription -->
       <div class="card bg-base-100 shadow-xl mb-4">
         <div class="card-body">
+<<<<<<< HEAD
           <div class="flex justify-between items-center mb-4">
             <h2 class="card-title">Push Notifications</h2>
             {#if subscriptionStatus === 'subscribed'}
@@ -560,10 +723,91 @@
                   </button>
                 {/if}
               </div>
+=======
+          <h2 class="card-title">Push Notifications</h2>
+          
+          {#if subscriptionStatus === 'not-supported'}
+            <div class="alert alert-error">
+              <span>Push notifications are not supported in this browser</span>
+            </div>
+          {:else}
+            <div class="mb-4">
+              <div class="badge badge-lg {subscriptionStatus === 'subscribed' ? 'badge-success' : subscriptionStatus === 'granted' ? 'badge-warning' : 'badge-error'}">
+                {subscriptionStatus === 'subscribed' ? 'Subscribed' : subscriptionStatus === 'granted' ? 'Permission Granted' : subscriptionStatus === 'denied' ? 'Permission Denied' : 'Not Subscribed'}
+              </div>
+            </div>
+            
+            {#if subscriptionStatus !== 'subscribed'}
+              <button 
+                class="btn btn-primary" 
+                on:click={subscribe}
+                disabled={isLoading}
+              >
+                {#if isLoading}
+                  <span class="loading loading-spinner"></span>
+                  Subscribing...
+                {:else}
+                  Subscribe to Push Notifications
+                {/if}
+              </button>
+            {:else}
+              <p class="text-success">You are subscribed to push notifications!</p>
+>>>>>>> 02675bc (After Deploy Shamim)
             {/if}
           {/if}
         </div>
       </div>
+<<<<<<< HEAD
+=======
+      
+      <!-- Send Test Push -->
+      <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+          <h2 class="card-title">Send Test Push Notification</h2>
+          <p class="text-sm text-gray-600 mb-4">Send a test push notification to yourself</p>
+          
+          <div class="form-control mb-4">
+            <label class="label">
+              <span class="label-text">Title</span>
+            </label>
+            <input 
+              type="text" 
+              placeholder="Notification title" 
+              class="input input-bordered"
+              bind:value={pushTitle}
+              disabled={isLoading}
+            />
+          </div>
+          
+          <div class="form-control mb-4">
+            <label class="label">
+              <span class="label-text">Body</span>
+            </label>
+            <textarea 
+              placeholder="Notification body" 
+              class="textarea textarea-bordered"
+              bind:value={pushBody}
+              disabled={isLoading}
+            ></textarea>
+          </div>
+          
+          <div class="form-control">
+            <button 
+              class="btn btn-success" 
+              on:click={sendTestPush}
+              disabled={isLoading || !pushTitle.trim() || !pushBody.trim()}
+            >
+              {#if isLoading}
+                <span class="loading loading-spinner"></span>
+                Sending...
+              {:else}
+                Send Push Notification
+              {/if}
+            </button>
+          </div>
+        </div>
+      </div>
+>>>>>>> 02675bc (After Deploy Shamim)
     {/if}
   </div>
 </div>

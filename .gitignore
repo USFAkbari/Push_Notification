@@ -41,7 +41,11 @@ frontend/.svelte-kit/
 Thumbs.db
 
 # MongoDB
+<<<<<<< HEAD
 *.log
 
 # Cursor
 .cursor/
+=======
+*.log
+>>>>>>> 02675bc (After Deploy Shamim)

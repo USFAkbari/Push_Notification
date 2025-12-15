@@ -5,7 +5,11 @@ from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+<<<<<<< HEAD
 from fastapi import Depends, HTTPException, status
+=======
+from fastapi import Depends, HTTPException, status, Header
+>>>>>>> 02675bc (After Deploy Shamim)
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 # Password hashing context
@@ -120,3 +124,36 @@ async def check_application_access(application_id: str, admin):
     
     return admin
 
+<<<<<<< HEAD
+=======
+
+async def verify_application_secret(x_application_secret: Optional[str] = Header(None)):
+    """
+    Dependency to verify application secret and return the application.
+    Uses X-Application-Secret header for authentication.
+    """
+    from db_models import Application
+    from app_secret import verify_application_secret as verify_secret
+    
+    if not x_application_secret:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="X-Application-Secret header is required",
+            headers={"WWW-Authenticate": "X-Application-Secret"},
+        )
+    
+    # Find all applications and verify secret
+    applications = await Application.find_all().to_list()
+    
+    for app in applications:
+        if verify_secret(x_application_secret, app.secret_hash):
+            return app
+    
+    # If no match found
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid application secret",
+        headers={"WWW-Authenticate": "X-Application-Secret"},
+    )
+
+>>>>>>> 02675bc (After Deploy Shamim)

@@ -1,0 +1,56 @@
+services:
+  user-registration-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: user_registration_back
+    restart: unless-stopped
+    environment:
+      - MONGODB_URI=mongodb://root:ea029108iideroq4c0f9a982a489f606b76@mongo_db:27017/user_registration_db?authSource=admin
+      - DATABASE_NAME=user_registration_db
+      - PUSH_SERVICE_URL=http://shamim_push_back:8000
+      - PUSH_ADMIN_USERNAME=admin
+      - PUSH_ADMIN_PASSWORD=admin
+      - PUSH_APPLICATION_NAME=User Registration App
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-changeme_secret_key_here}
+    networks:
+      - user_app_network
+      - shamim_network
+      - mongo_network
+    volumes:
+      - ./backend:/app
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  user-registration-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: user_registration_front
+    restart: unless-stopped
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8001/api
+      - VITE_PUSH_SERVICE_URL=https://push.shamim313.com/api-v1
+    depends_on:
+      - user-registration-backend
+    networks:
+      - user_app_network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+networks:
+  user_app_network:
+    driver: bridge
+  shamim_network:
+    external: true
+  mongo_network:
+    external: true
+
