@@ -1,61 +1,8 @@
 services:
-<<<<<<< HEAD
-  # ============================================================================
-  # MongoDB Service - Shared database for all applications
-  # ============================================================================
-  mongodb:
-    image: mongo:latest
-    container_name: push-notification-mongodb
-    ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_DATABASE: push_db
-      # Both services now use the same database (push_db)
-    volumes:
-      - mongodb_data:/data/db
-    networks:
-      - app-network
-    healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 2G
-        reservations:
-          cpus: '0.5'
-          memory: 1G
-
-  # ============================================================================
-  # Push Notification Backend Service
-  # ============================================================================
-=======
->>>>>>> 02675bc (After Deploy Shamim)
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-<<<<<<< HEAD
-    container_name: push-notification-backend
-    ports:
-      - "8000:8000"
-    environment:
-      - MONGODB_URI=mongodb://mongodb:27017/push_db
-      - DATABASE_NAME=push_db
-      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
-      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-}
-      - VAPID_EMAIL=${VAPID_EMAIL:-mailto:example@example.com}
-    depends_on:
-      mongodb:
-        condition: service_healthy
-    networks:
-      - app-network
-=======
     container_name: shamim_push_back
     restart: unless-stopped
     environment:
@@ -66,7 +13,6 @@ services:
     networks:
       - shamim_network
       - mongo_network
->>>>>>> 02675bc (After Deploy Shamim)
     volumes:
       - ./backend:/app
     healthcheck:
@@ -75,38 +21,11 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-<<<<<<< HEAD
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 1G
-        reservations:
-          cpus: '0.25'
-          memory: 512M
 
-  # ============================================================================
-  # Push Notification Frontend Service
-  # ============================================================================
-=======
-
->>>>>>> 02675bc (After Deploy Shamim)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-<<<<<<< HEAD
-    container_name: push-notification-frontend
-    ports:
-      - "3000:80"
-    environment:
-      - VITE_API_BASE_URL=http://localhost:8000
-    depends_on:
-      - backend
-    networks:
-      - app-network
-=======
     container_name: shamim_push_front
     restart: unless-stopped
     environment:
@@ -115,118 +34,12 @@ services:
       - backend
     networks:
       - shamim_network
->>>>>>> 02675bc (After Deploy Shamim)
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
       interval: 30s
       timeout: 3s
       retries: 3
       start_period: 5s
-<<<<<<< HEAD
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
-
-  # ============================================================================
-  # User Registration Backend Service
-  # ============================================================================
-  user-registration-backend:
-    build:
-      context: ./test_Web_Aplication/backend
-      dockerfile: Dockerfile
-    container_name: user-registration-backend
-    ports:
-      - "8001:8000"
-    environment:
-      - MONGODB_URI=mongodb://mongodb:27017/push_db
-      - DATABASE_NAME=push_db
-      - PUSH_SERVICE_URL=http://backend:8000
-      - PUSH_ADMIN_USERNAME=${PUSH_ADMIN_USERNAME:-admin}
-      - PUSH_ADMIN_PASSWORD=${PUSH_ADMIN_PASSWORD:-admin}
-      - PUSH_APPLICATION_NAME=User Registration App
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-changeme_secret_key_here}
-    depends_on:
-      mongodb:
-        condition: service_healthy
-      backend:
-        condition: service_healthy
-    networks:
-      - app-network
-    volumes:
-      - ./test_Web_Aplication/backend:/app
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 1G
-        reservations:
-          cpus: '0.25'
-          memory: 512M
-
-  # ============================================================================
-  # User Registration Frontend Service
-  # ============================================================================
-  user-registration-frontend:
-    build:
-      context: ./test_Web_Aplication/frontend
-      dockerfile: Dockerfile
-    container_name: user-registration-frontend
-    ports:
-      - "3001:80"
-    environment:
-      - VITE_API_BASE_URL=http://localhost:8001/api
-      - VITE_PUSH_SERVICE_URL=https://push.shamim313.com/api-v1
-    depends_on:
-      - user-registration-backend
-    networks:
-      - app-network
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-      start_period: 5s
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
-
-# ============================================================================
-# Networks Configuration
-# ============================================================================
-networks:
-  # Bridge network for regular Docker Compose - enables service discovery
-  app-network:
-    driver: bridge
-    name: push-notification-network
-
-# ============================================================================
-# Volumes Configuration
-# ============================================================================
-volumes:
-  # Persistent storage for MongoDB data
-  mongodb_data:
-    driver: local
-    name: push-notification-mongodb-data
-=======
 
 networks:
   shamim_network:
@@ -234,4 +47,3 @@ networks:
   mongo_network:
     external: true
 
->>>>>>> 02675bc (After Deploy Shamim)

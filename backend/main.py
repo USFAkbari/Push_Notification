@@ -7,21 +7,13 @@ from pydantic import BaseModel
 from typing import Optional, Dict, List
 from datetime import datetime
 from database import init_database
-<<<<<<< HEAD
-from db_models import PushSubscription, Admin, Application, User, UserFingerprint
-=======
 from db_models import PushSubscription, Admin, Application
->>>>>>> 02675bc (After Deploy Shamim)
 from push_service import send_push_notification, get_vapid_public_key
 from generate_vapid_keys import ensure_vapid_keys
 from auth import (
     verify_password, get_password_hash, create_access_token,
-<<<<<<< HEAD
-    get_current_admin, get_current_admin_with_permissions, check_application_access, verify_token
-=======
     get_current_admin, get_current_admin_with_permissions, check_application_access, verify_token,
     verify_application_secret
->>>>>>> 02675bc (After Deploy Shamim)
 )
 from app_secret import generate_application_secret, hash_application_secret
 
@@ -71,10 +63,7 @@ class SubscriptionData(BaseModel):
     endpoint: str
     keys: Dict
     user_id: Optional[str] = None
-<<<<<<< HEAD
-=======
     app_name: Optional[str] = None  # Application name for auto-linking
->>>>>>> 02675bc (After Deploy Shamim)
 
 
 class PushPayload(BaseModel):
@@ -146,31 +135,6 @@ class UserListResponse(BaseModel):
     offset: int
 
 
-<<<<<<< HEAD
-class AllUserResponse(BaseModel):
-    """All users response model with subscription status."""
-    id: str
-    user_id: str
-    username: Optional[str] = None
-    email: Optional[str] = None
-    has_subscription: bool = False
-    subscription_id: Optional[str] = None
-    endpoint: Optional[str] = None
-    application_id: Optional[str] = None
-    application_name: Optional[str] = None
-    created_at: datetime
-
-
-class AllUserListResponse(BaseModel):
-    """All users list response model."""
-    users: List[AllUserResponse]
-    total: int
-    limit: int
-    offset: int
-
-
-=======
->>>>>>> 02675bc (After Deploy Shamim)
 class PushToUsersRequest(BaseModel):
     """Push notification request for list of users."""
     user_ids: List[str]
@@ -229,35 +193,6 @@ class PushResponse(BaseModel):
     total: int = 0
 
 
-<<<<<<< HEAD
-class FingerprintInfo(BaseModel):
-    """Fingerprint summary information."""
-    browser: Optional[str] = None
-    os: Optional[str] = None
-    device: Optional[str] = None
-
-
-class RegisteredUserResponse(BaseModel):
-    """Registered user response model with fingerprint information."""
-    id: str
-    username: str
-    email: str
-    created_at: datetime
-    fingerprint: Optional[FingerprintInfo] = None
-    has_push_subscription: bool = False
-    push_subscription_id: Optional[str] = None
-
-
-class RegisteredUserListResponse(BaseModel):
-    """Registered users list response model."""
-    users: List[RegisteredUserResponse]
-    total: int
-    limit: int
-    offset: int
-
-
-=======
->>>>>>> 02675bc (After Deploy Shamim)
 @app.on_event("startup")
 async def startup_event():
     """Initialize database and ensure VAPID keys exist on startup."""
@@ -276,13 +211,8 @@ async def startup_event():
         logger.info("VAPID keys are configured and valid.")
     
     # Initialize database
-<<<<<<< HEAD
-    from db_models import PushSubscription, Admin, Application, User, UserFingerprint
-    await init_database([PushSubscription, Admin, Application, User, UserFingerprint])
-=======
     from db_models import PushSubscription, Admin, Application
     await init_database([PushSubscription, Admin, Application])
->>>>>>> 02675bc (After Deploy Shamim)
     
     # Check if any admin exists, if not create default admin
     admin_count = await Admin.find({}).count()
@@ -358,10 +288,6 @@ async def subscribe(subscription: SubscriptionData):
     try:
         logger.info(f"Received subscription request for endpoint: {subscription.endpoint[:50]}...")
         logger.info(f"User ID: {subscription.user_id}")
-<<<<<<< HEAD
-        logger.info(f"Has keys: p256dh={bool(subscription.keys.get('p256dh'))}, auth={bool(subscription.keys.get('auth'))}")
-        
-=======
         logger.info(f"App Name: {subscription.app_name}")
         logger.info(f"Has keys: p256dh={bool(subscription.keys.get('p256dh'))}, auth={bool(subscription.keys.get('auth'))}")
         
@@ -386,7 +312,6 @@ async def subscribe(subscription: SubscriptionData):
                 application_id = str(new_app.id)
                 logger.info(f"Application created with ID: {application_id}")
         
->>>>>>> 02675bc (After Deploy Shamim)
         # Check if subscription already exists
         existing = await PushSubscription.find_one({"endpoint": subscription.endpoint})
         
@@ -395,15 +320,10 @@ async def subscribe(subscription: SubscriptionData):
             logger.info(f"Updating existing subscription for endpoint: {subscription.endpoint[:50]}...")
             existing.keys = subscription.keys
             existing.user_id = subscription.user_id
-<<<<<<< HEAD
-            await existing.save()
-            logger.info(f"Subscription updated successfully for user_id: {subscription.user_id}")
-=======
             if application_id:
                 existing.application_id = application_id
             await existing.save()
             logger.info(f"Subscription updated successfully for user_id: {subscription.user_id}, application_id: {application_id}")
->>>>>>> 02675bc (After Deploy Shamim)
             return {"success": True, "message": "Subscription updated"}
         
         # Create new subscription
@@ -412,39 +332,17 @@ async def subscribe(subscription: SubscriptionData):
             endpoint=subscription.endpoint,
             keys=subscription.keys,
             user_id=subscription.user_id,
-<<<<<<< HEAD
-            created_at=datetime.utcnow()
-        )
-        await push_sub.insert()
-        logger.info(f"Subscription stored successfully for user_id: {subscription.user_id}")
-=======
             application_id=application_id,
             created_at=datetime.utcnow()
         )
         await push_sub.insert()
         logger.info(f"Subscription stored successfully for user_id: {subscription.user_id}, application_id: {application_id}")
->>>>>>> 02675bc (After Deploy Shamim)
         return {"success": True, "message": "Subscription stored"}
     except Exception as e:
         logger.error(f"Error storing subscription: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error storing subscription: {str(e)}")
 
 
-<<<<<<< HEAD
-@api_router.post("/push/single/{user_id}")
-async def push_single(
-    user_id: str,
-    payload: PushPayload,
-    current_admin: dict = Depends(get_current_admin)
-):
-    """Send push notification to a specific user. Requires admin authentication."""
-    try:
-        # Find subscription by user_id
-        subscription = await PushSubscription.find_one({"user_id": user_id})
-        
-        if not subscription:
-            raise HTTPException(status_code=404, detail="Subscription not found")
-=======
 @api_router.post("/push/single/{user_id}", response_model=PushResponse)
 async def push_single(
     user_id: str,
@@ -461,7 +359,6 @@ async def push_single(
         
         if not subscription:
             raise HTTPException(status_code=404, detail="Subscription not found for this user in your application")
->>>>>>> 02675bc (After Deploy Shamim)
         
         # Prepare subscription info for pywebpush
         subscription_info = {
@@ -476,29 +373,6 @@ async def push_single(
         )
         
         if not success:
-<<<<<<< HEAD
-            raise HTTPException(status_code=500, detail="Failed to send push notification")
-        
-        return {"success": True, "message": "Push notification sent"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error sending push: {str(e)}")
-
-
-@api_router.post("/push/broadcast")
-async def push_broadcast(
-    payload: PushPayload,
-    current_admin: dict = Depends(get_current_admin)
-):
-    """Send push notification to all subscribed users. Requires admin authentication."""
-    try:
-        # Get all subscriptions
-        subscriptions = await PushSubscription.find_all().to_list()
-        
-        if not subscriptions:
-            raise HTTPException(status_code=404, detail="No subscriptions found")
-=======
             return PushResponse(
                 success=False,
                 message="Failed to send push notification",
@@ -533,7 +407,6 @@ async def push_broadcast(
         
         if not subscriptions:
             raise HTTPException(status_code=404, detail="No subscriptions found for this application")
->>>>>>> 02675bc (After Deploy Shamim)
         
         success_count = 0
         failed_count = 0
@@ -554,21 +427,6 @@ async def push_broadcast(
             else:
                 failed_count += 1
         
-<<<<<<< HEAD
-        return {
-            "success": True,
-            "message": "Broadcast push notifications sent",
-            "success_count": success_count,
-            "failed_count": failed_count,
-            "total": len(subscriptions)
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error sending broadcast: {str(e)}")
-
-
-=======
         return PushResponse(
             success=True,
             message="Broadcast push notifications sent",
@@ -640,7 +498,6 @@ async def push_to_users(
         raise HTTPException(status_code=500, detail=f"Error sending push: {str(e)}")
 
 
->>>>>>> 02675bc (After Deploy Shamim)
 # ==================== Admin Endpoints ====================
 
 @api_router.post("/admin/login", response_model=AdminLoginResponse)
@@ -1064,245 +921,6 @@ async def list_users(
         raise HTTPException(status_code=500, detail=f"Error listing users: {str(e)}")
 
 
-<<<<<<< HEAD
-@api_router.get("/admin/users/all", response_model=AllUserListResponse)
-async def get_all_users(
-    limit: int = Query(10, ge=1, le=100),
-    offset: int = Query(0, ge=0),
-    application_id: Optional[str] = Query(None),
-    include_without_subscription: bool = Query(True),
-    current_admin = Depends(get_current_admin_with_permissions)
-):
-    """Get all users from users collection and their subscription status. Regular admins only see users from their assigned applications."""
-    try:
-        # Build filter for subscriptions
-        subscription_filter = {}
-        
-        # Filter by application_id if provided
-        if application_id:
-            # Check if admin has access to this application
-            if not current_admin.is_super_admin:
-                if application_id not in current_admin.application_ids:
-                    return AllUserListResponse(
-                        users=[],
-                        total=0,
-                        limit=limit,
-                        offset=offset
-                    )
-            subscription_filter["application_id"] = application_id
-        
-        # Filter by admin permissions (if not super admin)
-        if not current_admin.is_super_admin:
-            if current_admin.application_ids:
-                if "application_id" in subscription_filter:
-                    # Already filtered by specific application
-                    pass
-                else:
-                    subscription_filter["application_id"] = {"$in": current_admin.application_ids}
-            else:
-                # Admin has no assigned applications, only return users without subscriptions if allowed
-                if not include_without_subscription:
-                    return AllUserListResponse(
-                        users=[],
-                        total=0,
-                        limit=limit,
-                        offset=offset
-                    )
-        
-        # Get all subscriptions matching filter
-        subscriptions = await PushSubscription.find(subscription_filter).to_list()
-        
-        # Create a map of user_id to subscription for quick lookup
-        subscription_map = {}
-        for sub in subscriptions:
-            if sub.user_id:
-                subscription_map[sub.user_id] = sub
-        
-        # Get all users from users collection
-        users_query = {}
-        if not current_admin.is_super_admin and application_id:
-            # If filtering by application, we need to check which users have subscriptions for that app
-            user_ids_with_subscription = [sub.user_id for sub in subscriptions if sub.user_id]
-            if not include_without_subscription and not user_ids_with_subscription:
-                return AllUserListResponse(
-                    users=[],
-                    total=0,
-                    limit=limit,
-                    offset=offset
-                )
-        
-        # Get total count of users
-        total_users = await User.find(users_query).count()
-        
-        # Get paginated users
-        users = await User.find(users_query).skip(offset).limit(limit).to_list()
-        
-        # Get application names
-        application_names = {}
-        if application_id:
-            app = await Application.get(application_id)
-            if app:
-                application_names[application_id] = app.name
-        else:
-            # Get all application names for subscriptions
-            app_ids = set()
-            for sub in subscriptions:
-                if sub.application_id:
-                    app_ids.add(sub.application_id)
-            for app_id in app_ids:
-                app = await Application.get(app_id)
-                if app:
-                    application_names[app_id] = app.name
-        
-        # Merge users with subscription data
-        all_user_responses = []
-        for user in users:
-            user_id_str = str(user.id)
-            subscription = subscription_map.get(user_id_str)
-            
-            # Check if user's subscription is in allowed applications
-            if subscription and subscription.application_id:
-                if not current_admin.is_super_admin:
-                    if subscription.application_id not in current_admin.application_ids:
-                        # Skip this user if admin doesn't have access to their application
-                        continue
-            elif subscription:
-                # User has subscription but no application_id - skip if not super admin
-                if not current_admin.is_super_admin:
-                    continue
-            
-            # Skip users without subscriptions if not including them
-            if not include_without_subscription and not subscription:
-                continue
-            
-            application_name = None
-            if subscription and subscription.application_id:
-                application_name = application_names.get(subscription.application_id)
-            
-            all_user_responses.append(AllUserResponse(
-                id=user_id_str,
-                user_id=user_id_str,
-                username=user.username,
-                email=user.email,
-                has_subscription=subscription is not None,
-                subscription_id=str(subscription.id) if subscription else None,
-                endpoint=subscription.endpoint if subscription else None,
-                application_id=subscription.application_id if subscription else None,
-                application_name=application_name,
-                created_at=user.created_at
-            ))
-        
-        # Filter total count if needed
-        if not include_without_subscription:
-            total = len(all_user_responses)
-        else:
-            total = total_users
-        
-        return AllUserListResponse(
-            users=all_user_responses,
-            total=total,
-            limit=limit,
-            offset=offset
-        )
-    except Exception as e:
-        logger.error(f"Error getting all users: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error getting all users: {str(e)}")
-
-
-@api_router.get("/admin/users/registered", response_model=RegisteredUserListResponse)
-async def get_registered_users(
-    limit: int = Query(10, ge=1, le=100),
-    offset: int = Query(0, ge=0),
-    username: Optional[str] = Query(None),
-    email: Optional[str] = Query(None),
-    browser: Optional[str] = Query(None),
-    os: Optional[str] = Query(None),
-    current_admin = Depends(get_current_admin_with_permissions)
-):
-    """Get registered users from users collection with fingerprint information. Regular admins can see all registered users."""
-    try:
-        # Build filter for users
-        user_filter = {}
-        
-        # Filter by username (partial match using regex)
-        if username:
-            user_filter["username"] = {"$regex": username, "$options": "i"}
-        
-        # Filter by email (partial match using regex)
-        if email:
-            user_filter["email"] = {"$regex": email, "$options": "i"}
-        
-        # Get total count of users
-        total_users = await User.find(user_filter).count()
-        
-        # Get paginated users
-        users = await User.find(user_filter).skip(offset).limit(limit).to_list()
-        
-        # Get all fingerprints for these users
-        user_ids = [str(user.id) for user in users]
-        fingerprints = await UserFingerprint.find({"user_id": {"$in": user_ids}}).to_list()
-        
-        # Create a map of user_id to fingerprint
-        fingerprint_map = {}
-        for fp in fingerprints:
-            fingerprint_map[fp.user_id] = fp
-        
-        # Get all push subscriptions for these users
-        subscriptions = await PushSubscription.find({"user_id": {"$in": user_ids}}).to_list()
-        
-        # Create a map of user_id to subscription
-        subscription_map = {}
-        for sub in subscriptions:
-            if sub.user_id:
-                subscription_map[sub.user_id] = sub
-        
-        # Build response
-        registered_users = []
-        for user in users:
-            user_id_str = str(user.id)
-            fingerprint = fingerprint_map.get(user_id_str)
-            subscription = subscription_map.get(user_id_str)
-            
-            # Extract fingerprint info
-            fingerprint_info = None
-            if fingerprint and fingerprint.device_info:
-                fingerprint_info = FingerprintInfo(
-                    browser=fingerprint.device_info.get("browser"),
-                    os=fingerprint.device_info.get("os"),
-                    device=fingerprint.device_info.get("device")
-                )
-            
-            # Apply browser/os filters if provided
-            if browser and fingerprint_info:
-                if fingerprint_info.browser and browser.lower() not in fingerprint_info.browser.lower():
-                    continue
-            if os and fingerprint_info:
-                if fingerprint_info.os and os.lower() not in fingerprint_info.os.lower():
-                    continue
-            
-            registered_users.append(RegisteredUserResponse(
-                id=user_id_str,
-                username=user.username,
-                email=user.email,
-                created_at=user.created_at,
-                fingerprint=fingerprint_info,
-                has_push_subscription=subscription is not None,
-                push_subscription_id=str(subscription.id) if subscription else None
-            ))
-        
-        return RegisteredUserListResponse(
-            users=registered_users,
-            total=total_users,
-            limit=limit,
-            offset=offset
-        )
-    except Exception as e:
-        logger.error(f"Error getting registered users: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error getting registered users: {str(e)}")
-
-
-=======
->>>>>>> 02675bc (After Deploy Shamim)
 @api_router.get("/admin/users/{user_id}", response_model=UserResponse)
 async def get_user(
     user_id: str,
@@ -1381,8 +999,6 @@ async def delete_user(
         raise HTTPException(status_code=500, detail=f"Error deleting user: {str(e)}")
 
 
-<<<<<<< HEAD
-=======
 @api_router.get("/app/users", response_model=UserListResponse)
 async def list_app_users(
     limit: int = Query(100, ge=1, le=100),
@@ -1434,7 +1050,6 @@ async def list_app_users(
         raise HTTPException(status_code=500, detail=f"Error listing users: {str(e)}")
 
 
->>>>>>> 02675bc (After Deploy Shamim)
 @api_router.post("/admin/users", response_model=UserResponse)
 async def create_user(
     user_data: UserCreate,

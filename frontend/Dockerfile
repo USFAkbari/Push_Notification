@@ -9,11 +9,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-<<<<<<< HEAD
-RUN npm install
-=======
 RUN npm ci
->>>>>>> 02675bc (After Deploy Shamim)
 
 # Copy source code
 COPY . .

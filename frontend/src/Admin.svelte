@@ -2,15 +2,6 @@
   import axios from 'axios';
   import { onMount } from 'svelte';
 
-<<<<<<< HEAD
-  // Ensure axios baseURL is set (in case Admin is loaded before main.js)
-  if (!axios.defaults.baseURL) {
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-    axios.defaults.baseURL = API_BASE_URL || '/api-v1';
-  }
-
-=======
->>>>>>> 02675bc (After Deploy Shamim)
   let isAuthenticated = false;
   let username = '';
   let password = '';
@@ -46,21 +37,6 @@
   let userToAssign = null;
   let assignApplicationId = '';
 
-<<<<<<< HEAD
-  // Registered users state
-  let registeredUsers = [];
-  let totalRegisteredUsers = 0;
-  let registeredUsersPage = 1;
-  let registeredUsersLimit = 10;
-  let filterRegisteredUsername = '';
-  let filterRegisteredEmail = '';
-  let filterRegisteredBrowser = '';
-  let filterRegisteredOS = '';
-  let selectedRegisteredUser = null;
-  let showRegisteredUsersInUsersTab = false;
-
-=======
->>>>>>> 02675bc (After Deploy Shamim)
   // Push notification state
   let pushTitle = '';
   let pushBody = '';
@@ -322,70 +298,6 @@
     }
   }
 
-<<<<<<< HEAD
-  // Load registered users with filters
-  async function loadRegisteredUsers() {
-    try {
-      const offset = (registeredUsersPage - 1) * registeredUsersLimit;
-      const params = { limit: registeredUsersLimit, offset };
-      
-      if (filterRegisteredUsername) {
-        params.username = filterRegisteredUsername;
-      }
-      if (filterRegisteredEmail) {
-        params.email = filterRegisteredEmail;
-      }
-      if (filterRegisteredBrowser) {
-        params.browser = filterRegisteredBrowser;
-      }
-      if (filterRegisteredOS) {
-        params.os = filterRegisteredOS;
-      }
-      
-      const response = await axios.get('/admin/users/registered', { params });
-      registeredUsers = response.data.users;
-      totalRegisteredUsers = response.data.total;
-    } catch (error) {
-      showMessage(error.response?.data?.detail || 'Failed to load registered users', 'error');
-    }
-  }
-
-  // Get registered user details
-  async function getRegisteredUserDetails(userId) {
-    try {
-      // For now, we'll use the user data from the list
-      selectedRegisteredUser = registeredUsers.find(u => u.id === userId) || null;
-    } catch (error) {
-      showMessage(error.response?.data?.detail || 'Failed to load registered user details', 'error');
-    }
-  }
-
-  // Filter registered users
-  function filterRegisteredUsers() {
-    registeredUsersPage = 1;
-    loadRegisteredUsers();
-  }
-
-  // Reset registered users filters
-  function resetRegisteredUsersFilters() {
-    filterRegisteredUsername = '';
-    filterRegisteredEmail = '';
-    filterRegisteredBrowser = '';
-    filterRegisteredOS = '';
-    registeredUsersPage = 1;
-    loadRegisteredUsers();
-  }
-
-  // Pagination for registered users
-  function goToRegisteredUsersPage(page) {
-    registeredUsersPage = page;
-    loadRegisteredUsers();
-  }
-
-  const totalRegisteredUsersPages = Math.ceil(totalRegisteredUsers / registeredUsersLimit);
-
-=======
->>>>>>> 02675bc (After Deploy Shamim)
   // Get user details
   async function getUserDetails(userId) {
     try {
@@ -499,39 +411,21 @@
       };
 
       let response;
-<<<<<<< HEAD
-      let endpoint = '';
-=======
->>>>>>> 02675bc (After Deploy Shamim)
       
       if (pushRecipientType === 'single') {
         if (!pushSelectedUserId) {
           showMessage('Please select a user', 'error');
           return;
         }
-<<<<<<< HEAD
-        endpoint = `/admin/push/single/${pushSelectedUserId}`;
-        response = await axios.post(endpoint, payload);
-      } else if (pushRecipientType === 'all') {
-        endpoint = '/admin/push/broadcast';
-        response = await axios.post(endpoint, payload);
-=======
         response = await axios.post(`/admin/push/single/${pushSelectedUserId}`, payload);
       } else if (pushRecipientType === 'all') {
         response = await axios.post('/admin/push/broadcast', payload);
->>>>>>> 02675bc (After Deploy Shamim)
       } else if (pushRecipientType === 'application') {
         if (!pushSelectedAppId) {
           showMessage('Please select an application', 'error');
           return;
         }
-<<<<<<< HEAD
-        endpoint = `/admin/push/application/${pushSelectedAppId}`;
-        console.log('Sending push to application:', pushSelectedAppId, 'Endpoint:', endpoint);
-        response = await axios.post(endpoint, payload);
-=======
         response = await axios.post(`/admin/push/application/${pushSelectedAppId}`, payload);
->>>>>>> 02675bc (After Deploy Shamim)
       } else if (pushRecipientType === 'list') {
         if (!pushUserIds) {
           showMessage('Please enter user IDs', 'error');
@@ -542,12 +436,7 @@
           showMessage('Please enter at least one user ID', 'error');
           return;
         }
-<<<<<<< HEAD
-        endpoint = '/admin/push/users';
-        response = await axios.post(endpoint, {
-=======
         response = await axios.post('/admin/push/users', {
->>>>>>> 02675bc (After Deploy Shamim)
           user_ids: userIdsList,
           payload: payload
         });
@@ -559,19 +448,7 @@
         pushResult.success_count > 0 ? 'success' : 'error'
       );
     } catch (error) {
-<<<<<<< HEAD
-      console.error('Push notification error:', error);
-      console.error('Error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        endpoint: error.config?.url
-      });
-      const errorMessage = error.response?.data?.detail || error.message || 'Failed to send push notification';
-      showMessage(errorMessage, 'error');
-=======
       showMessage(error.response?.data?.detail || 'Failed to send push notification', 'error');
->>>>>>> 02675bc (After Deploy Shamim)
       pushResult = null;
     } finally {
       isLoading = false;
@@ -835,15 +712,6 @@
             >
               Push Notifications
             </button>
-<<<<<<< HEAD
-            <button 
-              class="tab {activeTab === 'registered-users' ? 'tab-active' : ''} whitespace-nowrap"
-              on:click={() => { activeTab = 'registered-users'; loadRegisteredUsers(); }}
-            >
-              Registered Users
-            </button>
-=======
->>>>>>> 02675bc (After Deploy Shamim)
             {#if currentAdminInfo?.is_super_admin}
             <button 
               class="tab {activeTab === 'admins' ? 'tab-active' : ''} whitespace-nowrap"
@@ -951,20 +819,9 @@
               <div class="card-body">
                 <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
                   <h2 class="card-title text-xl md:text-2xl">Users</h2>
-<<<<<<< HEAD
-                  <div class="flex gap-2">
-                    <button class="btn btn-secondary btn-sm md:btn-md" on:click={() => { showRegisteredUsersInUsersTab = !showRegisteredUsersInUsersTab; if (showRegisteredUsersInUsersTab) loadRegisteredUsers(); }}>
-                      {showRegisteredUsersInUsersTab ? 'Hide Registered Users' : 'Show Registered Users'}
-                    </button>
-                    <button class="btn btn-primary btn-sm md:btn-md" on:click={() => { showUserForm = !showUserForm; userFormData = { user_id: '', endpoint: '', p256dh: '', auth: '', application_id: '' }; }}>
-                      {showUserForm ? 'Cancel' : 'Create User'}
-                    </button>
-                  </div>
-=======
                   <button class="btn btn-primary btn-sm md:btn-md" on:click={() => { showUserForm = !showUserForm; userFormData = { user_id: '', endpoint: '', p256dh: '', auth: '', application_id: '' }; }}>
                     {showUserForm ? 'Cancel' : 'Create User'}
                   </button>
->>>>>>> 02675bc (After Deploy Shamim)
                 </div>
 
                 {#if showUserForm}
@@ -1154,259 +1011,6 @@
                     </button>
                   </div>
                 {/if}
-<<<<<<< HEAD
-
-                <!-- Registered Users Section -->
-                {#if showRegisteredUsersInUsersTab}
-                  <div class="divider my-6">Registered Users</div>
-                  
-                  <!-- Registered Users Filters -->
-                  <div class="card bg-base-100 mb-4">
-                    <div class="card-body">
-                      <h3 class="card-title text-lg mb-4">Registered Users Filters</h3>
-                      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div class="form-control">
-                          <label class="label">
-                            <span class="label-text">Username</span>
-                          </label>
-                          <input 
-                            type="text" 
-                            placeholder="Filter by username" 
-                            class="input input-bordered w-full"
-                            bind:value={filterRegisteredUsername}
-                          />
-                        </div>
-                        <div class="form-control">
-                          <label class="label">
-                            <span class="label-text">Email</span>
-                          </label>
-                          <input 
-                            type="text" 
-                            placeholder="Filter by email" 
-                            class="input input-bordered w-full"
-                            bind:value={filterRegisteredEmail}
-                          />
-                        </div>
-                        <div class="form-control">
-                          <label class="label">
-                            <span class="label-text">Browser</span>
-                          </label>
-                          <input 
-                            type="text" 
-                            placeholder="Filter by browser" 
-                            class="input input-bordered w-full"
-                            bind:value={filterRegisteredBrowser}
-                          />
-                        </div>
-                        <div class="form-control">
-                          <label class="label">
-                            <span class="label-text">OS</span>
-                          </label>
-                          <input 
-                            type="text" 
-                            placeholder="Filter by OS" 
-                            class="input input-bordered w-full"
-                            bind:value={filterRegisteredOS}
-                          />
-                        </div>
-                      </div>
-                      <div class="flex gap-2 mt-4">
-                        <button class="btn btn-primary" on:click={filterRegisteredUsers}>Apply Filters</button>
-                        <button class="btn btn-ghost" on:click={resetRegisteredUsersFilters}>Reset Filters</button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {#if registeredUsers.length === 0}
-                    <p class="text-center text-gray-500">No registered users found.</p>
-                  {:else}
-                    <div class="overflow-x-auto mb-4 -mx-2 md:mx-0">
-                      <table class="table table-zebra w-full text-sm md:text-base">
-                        <thead>
-                          <tr>
-                            <th class="hidden md:table-cell">Username</th>
-                            <th class="table-cell md:hidden">User</th>
-                            <th class="hidden lg:table-cell">Email</th>
-                            <th class="hidden xl:table-cell">Browser</th>
-                            <th class="hidden xl:table-cell">OS</th>
-                            <th class="hidden lg:table-cell">Device</th>
-                            <th class="hidden md:table-cell">Push Subscription</th>
-                            <th class="hidden md:table-cell">Created At</th>
-                            <th>Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {#each registeredUsers as user}
-                            <tr>
-                              <td class="font-medium">{user.username}</td>
-                              <td class="hidden lg:table-cell">{user.email}</td>
-                              <td class="hidden xl:table-cell">{user.fingerprint?.browser || '-'}</td>
-                              <td class="hidden xl:table-cell">{user.fingerprint?.os || '-'}</td>
-                              <td class="hidden lg:table-cell">{user.fingerprint?.device || '-'}</td>
-                              <td class="hidden md:table-cell">
-                                {#if user.has_push_subscription}
-                                  <span class="badge badge-success badge-sm">Yes</span>
-                                {:else}
-                                  <span class="badge badge-error badge-sm">No</span>
-                                {/if}
-                              </td>
-                              <td class="hidden md:table-cell text-xs">{new Date(user.created_at).toLocaleDateString()}</td>
-                              <td>
-                                <div class="flex flex-wrap gap-1 md:gap-2">
-                                  <button class="btn btn-xs md:btn-sm btn-info" on:click={() => getRegisteredUserDetails(user.id)}>
-                                    <span class="hidden md:inline">View</span>
-                                    <span class="md:hidden">👁</span>
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          {/each}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <!-- Registered Users Pagination -->
-                    <div class="flex justify-center items-center gap-2">
-                      <button class="btn btn-sm" on:click={() => goToRegisteredUsersPage(registeredUsersPage - 1)} disabled={registeredUsersPage === 1}>
-                        Previous
-                      </button>
-                      <span class="text-sm">Page {registeredUsersPage} of {totalRegisteredUsersPages} (Total: {totalRegisteredUsers})</span>
-                      <button class="btn btn-sm" on:click={() => goToRegisteredUsersPage(registeredUsersPage + 1)} disabled={registeredUsersPage >= totalRegisteredUsersPages}>
-                        Next
-                      </button>
-                    </div>
-                  {/if}
-                {/if}
-              </div>
-            </div>
-          {/if}
-
-          <!-- Registered Users Tab -->
-          {#if activeTab === 'registered-users'}
-            <div class="card bg-base-200">
-              <div class="card-body">
-                <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
-                  <h2 class="card-title text-xl md:text-2xl">Registered Users</h2>
-                </div>
-
-                <!-- Registered Users Filters -->
-                <div class="card bg-base-100 mb-4">
-                  <div class="card-body">
-                    <h3 class="card-title text-lg mb-4">Filters</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div class="form-control">
-                        <label class="label">
-                          <span class="label-text">Username</span>
-                        </label>
-                        <input 
-                          type="text" 
-                          placeholder="Filter by username" 
-                          class="input input-bordered w-full"
-                          bind:value={filterRegisteredUsername}
-                        />
-                      </div>
-                      <div class="form-control">
-                        <label class="label">
-                          <span class="label-text">Email</span>
-                        </label>
-                        <input 
-                          type="text" 
-                          placeholder="Filter by email" 
-                          class="input input-bordered w-full"
-                          bind:value={filterRegisteredEmail}
-                        />
-                      </div>
-                      <div class="form-control">
-                        <label class="label">
-                          <span class="label-text">Browser</span>
-                        </label>
-                        <input 
-                          type="text" 
-                          placeholder="Filter by browser" 
-                          class="input input-bordered w-full"
-                          bind:value={filterRegisteredBrowser}
-                        />
-                      </div>
-                      <div class="form-control">
-                        <label class="label">
-                          <span class="label-text">OS</span>
-                        </label>
-                        <input 
-                          type="text" 
-                          placeholder="Filter by OS" 
-                          class="input input-bordered w-full"
-                          bind:value={filterRegisteredOS}
-                        />
-                      </div>
-                    </div>
-                    <div class="flex gap-2 mt-4">
-                      <button class="btn btn-primary" on:click={filterRegisteredUsers}>Apply Filters</button>
-                      <button class="btn btn-ghost" on:click={resetRegisteredUsersFilters}>Reset Filters</button>
-                    </div>
-                  </div>
-                </div>
-
-                {#if registeredUsers.length === 0}
-                  <p class="text-center text-gray-500">No registered users found.</p>
-                {:else}
-                  <div class="overflow-x-auto mb-4 -mx-2 md:mx-0">
-                    <table class="table table-zebra w-full text-sm md:text-base">
-                      <thead>
-                        <tr>
-                          <th class="hidden md:table-cell">Username</th>
-                          <th class="table-cell md:hidden">User</th>
-                          <th class="hidden lg:table-cell">Email</th>
-                          <th class="hidden xl:table-cell">Browser</th>
-                          <th class="hidden xl:table-cell">OS</th>
-                          <th class="hidden lg:table-cell">Device</th>
-                          <th class="hidden md:table-cell">Push Subscription</th>
-                          <th class="hidden md:table-cell">Created At</th>
-                          <th>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {#each registeredUsers as user}
-                          <tr>
-                            <td class="font-medium">{user.username}</td>
-                            <td class="hidden lg:table-cell">{user.email}</td>
-                            <td class="hidden xl:table-cell">{user.fingerprint?.browser || '-'}</td>
-                            <td class="hidden xl:table-cell">{user.fingerprint?.os || '-'}</td>
-                            <td class="hidden lg:table-cell">{user.fingerprint?.device || '-'}</td>
-                            <td class="hidden md:table-cell">
-                              {#if user.has_push_subscription}
-                                <span class="badge badge-success badge-sm">Yes</span>
-                              {:else}
-                                <span class="badge badge-error badge-sm">No</span>
-                              {/if}
-                            </td>
-                            <td class="hidden md:table-cell text-xs">{new Date(user.created_at).toLocaleDateString()}</td>
-                            <td>
-                              <div class="flex flex-wrap gap-1 md:gap-2">
-                                <button class="btn btn-xs md:btn-sm btn-info" on:click={() => getRegisteredUserDetails(user.id)}>
-                                  <span class="hidden md:inline">View</span>
-                                  <span class="md:hidden">👁</span>
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        {/each}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <!-- Registered Users Pagination -->
-                  <div class="flex justify-center items-center gap-2">
-                    <button class="btn btn-sm" on:click={() => goToRegisteredUsersPage(registeredUsersPage - 1)} disabled={registeredUsersPage === 1}>
-                      Previous
-                    </button>
-                    <span class="text-sm">Page {registeredUsersPage} of {totalRegisteredUsersPages} (Total: {totalRegisteredUsers})</span>
-                    <button class="btn btn-sm" on:click={() => goToRegisteredUsersPage(registeredUsersPage + 1)} disabled={registeredUsersPage >= totalRegisteredUsersPages}>
-                      Next
-                    </button>
-                  </div>
-                {/if}
-=======
->>>>>>> 02675bc (After Deploy Shamim)
               </div>
             </div>
           {/if}
@@ -1755,49 +1359,6 @@
             </div>
           {/if}
 
-<<<<<<< HEAD
-          <!-- Registered User Details Modal -->
-          {#if selectedRegisteredUser}
-            <div class="modal modal-open">
-              <div class="modal-box">
-                <h3 class="font-bold text-lg mb-4">Registered User Details</h3>
-                <div class="space-y-2">
-                  <p><strong>ID:</strong> {selectedRegisteredUser.id}</p>
-                  <p><strong>Username:</strong> {selectedRegisteredUser.username}</p>
-                  <p><strong>Email:</strong> {selectedRegisteredUser.email}</p>
-                  <p><strong>Created At:</strong> {new Date(selectedRegisteredUser.created_at).toLocaleString()}</p>
-                  
-                  {#if selectedRegisteredUser.fingerprint}
-                    <div class="divider my-4">Fingerprint Information</div>
-                    <p><strong>Browser:</strong> {selectedRegisteredUser.fingerprint.browser || '-'}</p>
-                    <p><strong>OS:</strong> {selectedRegisteredUser.fingerprint.os || '-'}</p>
-                    <p><strong>Device:</strong> {selectedRegisteredUser.fingerprint.device || '-'}</p>
-                  {:else}
-                    <div class="divider my-4">Fingerprint Information</div>
-                    <p class="text-gray-500">No fingerprint information available</p>
-                  {/if}
-                  
-                  <div class="divider my-4">Push Subscription</div>
-                  <p><strong>Has Push Subscription:</strong> 
-                    {#if selectedRegisteredUser.has_push_subscription}
-                      <span class="badge badge-success badge-sm">Yes</span>
-                    {:else}
-                      <span class="badge badge-error badge-sm">No</span>
-                    {/if}
-                  </p>
-                  {#if selectedRegisteredUser.push_subscription_id}
-                    <p><strong>Subscription ID:</strong> {selectedRegisteredUser.push_subscription_id}</p>
-                  {/if}
-                </div>
-                <div class="modal-action">
-                  <button class="btn" on:click={() => selectedRegisteredUser = null}>Close</button>
-                </div>
-              </div>
-            </div>
-          {/if}
-
-=======
->>>>>>> 02675bc (After Deploy Shamim)
           <!-- Assign User Modal -->
           {#if showAssignModal && userToAssign}
             <div class="modal modal-open">

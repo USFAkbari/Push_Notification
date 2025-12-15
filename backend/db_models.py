@@ -2,11 +2,7 @@
 from datetime import datetime
 from typing import Optional, List
 from beanie import Document
-<<<<<<< HEAD
-from pydantic import Field, EmailStr
-=======
 from pydantic import Field
->>>>>>> 02675bc (After Deploy Shamim)
 
 
 class Admin(Document):
@@ -49,33 +45,3 @@ class PushSubscription(Document):
         name = "push_subscriptions"
         indexes = ["endpoint", "user_id", "application_id"]
 
-<<<<<<< HEAD
-
-class User(Document):
-    """User model from User Registration App - for unified access."""
-    
-    username: str = Field(..., unique=True)
-    email: EmailStr = Field(..., unique=True)
-    password_hash: str  # Hashed password using bcrypt
-    created_at: datetime = datetime.utcnow()
-    
-    class Settings:
-        name = "users"
-        indexes = ["username", "email"]
-
-
-class UserFingerprint(Document):
-    """User fingerprint model for device identification."""
-    
-    user_id: str = Field(..., index=True)  # Reference to User.id
-    fingerprint_hash: str = Field(..., index=True)  # Hashed fingerprint
-    device_info: Optional[dict] = None  # Device information (browser, OS, etc.)
-    created_at: datetime = datetime.utcnow()
-    updated_at: datetime = datetime.utcnow()
-    
-    class Settings:
-        name = "user_fingerprints"
-        indexes = ["user_id", "fingerprint_hash"]
-
-=======
->>>>>>> 02675bc (After Deploy Shamim)
